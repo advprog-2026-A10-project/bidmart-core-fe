@@ -2,7 +2,7 @@
 
 This repository now includes GitHub Actions workflows that implement:
 
-- CI on every PR and push to `staging`/`main`
+- CI on every PR and push to `ci-cd`/`staging`/`main`
 - Rust quality gates: `cargo fmt`, `cargo clippy -D warnings`, tests
 - Coverage enforcement via `cargo llvm-cov` (`MIN_LINE_COVERAGE=100`)
 - Optional SonarCloud scan + quality gate
@@ -10,11 +10,16 @@ This repository now includes GitHub Actions workflows that implement:
 - CD only after successful CI
 - Push to `staging` -> deploy to staging environment
 - Push to `main` -> deploy to production environment
+- Branch-flow policy:
+- Only `ci-cd` can open PRs into `staging`
+- Only `staging` can open PRs into `main`
+- Automatic PR creation from `ci-cd` to `staging` after successful CI on `ci-cd`
 
 ## Workflow Files
 
 - `.github/workflows/ci.yml`
 - `.github/workflows/cd.yml`
+- `.github/workflows/promote-ci-cd.yml`
 
 ## Required GitHub Secrets / Variables
 
@@ -31,10 +36,11 @@ Optional SonarCloud integration:
 
 ## Branch Protection Setup (GitHub Settings)
 
-For `main` and `staging`, enable branch protection and require:
+For `main`, `staging`, and `ci-cd`, enable branch protection and require:
 
 - At least 1 approving review
 - Required status check: `Rust checks`
 - Required status check: `PR approval gate`
+- Required status check: `Branch flow policy`
 
 This makes CI the merge gatekeeper and prevents deployment when quality gates fail.

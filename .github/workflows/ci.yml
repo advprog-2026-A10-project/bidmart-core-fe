@@ -13,6 +13,7 @@ on:
       - dismissed
   push:
     branches:
+      - ci-cd
       - main
       - staging
   workflow_dispatch:
@@ -30,6 +31,33 @@ env:
   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
 jobs:
+  branch-flow-policy:
+    name: Branch flow policy
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce PR source and target branches
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const base = pr.base.ref;
+            const head = pr.head.ref;
+
+            core.info(`Validating branch flow: ${head} -> ${base}`);
+
+            if (base === "staging" && head !== "ci-cd") {
+              core.setFailed("Only 'ci-cd' may open PRs targeting 'staging'.");
+              return;
+            }
+
+            if (base === "main" && head !== "staging") {
+              core.setFailed("Only 'staging' may open PRs targeting 'main'.");
+              return;
+            }
+
+            core.info("Branch flow policy check passed.");
+
   rust-ci:
     name: Rust checks
     if: ${{ github.event_name != 'pull_request_review' }}
