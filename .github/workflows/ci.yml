@@ -1,0 +1,142 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - staging
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+  pull_request_review:
+    types:
+      - submitted
+      - dismissed
+  push:
+    branches:
+      - main
+      - staging
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  MIN_LINE_COVERAGE: "100"
+
+jobs:
+  rust-ci:
+    name: Rust checks
+    if: ${{ github.event_name != 'pull_request_review' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure Rust workspace exists
+        run: |
+          if [ ! -f Cargo.toml ]; then
+            echo "Cargo.toml not found. Add your Rust workspace first."
+            exit 1
+          fi
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy, llvm-tools-preview
+
+      - name: Cache Cargo files
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run clippy (deny warnings)
+        run: cargo clippy --workspace --all-features --all-targets -- -D warnings
+
+      - name: Run unit and integration tests
+        run: cargo test --workspace --all-features --all-targets -- --nocapture
+
+      - name: Install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov --locked
+
+      - name: Enforce coverage threshold
+        run: |
+          cargo llvm-cov \
+            --workspace \
+            --all-features \
+            --all-targets \
+            --summary-only \
+            --lcov \
+            --output-path lcov.info \
+            --fail-under-lines "${MIN_LINE_COVERAGE}"
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lcov-report
+          path: lcov.info
+
+      - name: SonarCloud scan
+        if: ${{ secrets.SONAR_TOKEN != '' && vars.SONAR_PROJECT_KEY != '' && vars.SONAR_ORGANIZATION != '' }}
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+            -Dsonar.sources=.
+            -Dsonar.rust.lcov.reportPaths=lcov.info
+
+      - name: SonarCloud quality gate
+        if: ${{ secrets.SONAR_TOKEN != '' && vars.SONAR_PROJECT_KEY != '' && vars.SONAR_ORGANIZATION != '' }}
+        uses: SonarSource/sonarqube-quality-gate-action@v1.2.0
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  pr-approval-gate:
+    name: PR approval gate
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_review' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Require at least one approval
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pullNumber = context.payload.pull_request?.number;
+            if (!pullNumber) {
+              core.setFailed("Unable to resolve pull request number.");
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner,
+              repo,
+              pull_number: pullNumber,
+              per_page: 100,
+            });
+
+            const approvers = new Set(
+              reviews
+                .filter((review) => review.state === "APPROVED")
+                .map((review) => review.user.login)
+            );
+
+            core.info(`Approvals found: ${approvers.size}`);
+            if (approvers.size < 1) {
+              core.setFailed("At least 1 approving review is required before merge.");
+            }
