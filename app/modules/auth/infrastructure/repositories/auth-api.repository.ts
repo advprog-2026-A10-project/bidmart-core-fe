@@ -21,7 +21,11 @@ export class AuthApiRepository implements IAuthRepository {
     return AuthApiMapper.toDomain(validated.user);
   }
 
-  async register(data: { name: string; email: string; password: string }): Promise<{ message: string }> {
+  async register(data: {
+    name: string;
+    email: string;
+    password: string;
+  }): Promise<{ message: string }> {
     const raw = await apiClient.post<unknown>(`${this.basePath}/register`, data);
     const validated = registerApiSchema.parse(raw);
     return { message: validated.message };
