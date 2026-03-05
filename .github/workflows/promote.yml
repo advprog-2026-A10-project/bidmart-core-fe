@@ -71,4 +71,3 @@ jobs:
             --base "$base" \
             --title "Promote $head -> $base" \
             --body "Automated promotion PR. Branch protections and required reviews remain enforced."
-

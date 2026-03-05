@@ -107,9 +107,9 @@ export function RegisterForm({ onSubmit, isSubmitting = false }: RegisterFormPro
           {isSubmitting ? "Creating account..." : "Create account"}
         </Button>
 
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-center text-sm">
           Already have an account?{" "}
-          <Link to="/login" className="font-medium underline underline-offset-4 hover:text-primary">
+          <Link to="/login" className="hover:text-primary font-medium underline underline-offset-4">
             Sign in
           </Link>
         </p>
