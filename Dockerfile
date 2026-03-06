@@ -1,4 +1,4 @@
-﻿FROM node:20-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package.json ./
 COPY pnpm-lock.yaml* yarn.lock* package-lock.json* ./
@@ -14,7 +14,7 @@ RUN if [ -d dist ]; then mv dist /tmp/site; \
     elif [ -d build ]; then mv build /tmp/site; \
     else echo "No dist/build output found" && exit 1; fi
 
-FROM nginx:1.27-alpine
+FROM nginx:1.29-alpine
 COPY --from=builder /tmp/site/ /usr/share/nginx/html/
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
