@@ -1,4 +1,10 @@
-.react-router
-build
+﻿.git
+.github
+.gitignore
+.env
+.env.*
 node_modules
-README.md
+target
+dist
+build
+coverage

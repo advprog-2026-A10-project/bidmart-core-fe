@@ -61,11 +61,11 @@ export function VerifyEmailContent({ token, email }: VerifyEmailContentProps) {
       return (
         <div className="flex flex-col items-center gap-4 py-4 text-center">
           <div
-            className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
+            className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"
             role="status"
             aria-label="Verifying email"
           />
-          <p className="text-sm text-muted-foreground">Verifying your email…</p>
+          <p className="text-muted-foreground text-sm">Verifying your email…</p>
         </div>
       );
     }
@@ -86,7 +86,7 @@ export function VerifyEmailContent({ token, email }: VerifyEmailContentProps) {
     if (verifyEmail.isError) {
       return (
         <div className="flex flex-col items-center gap-4 py-4 text-center">
-          <p className="text-sm font-medium text-destructive">
+          <p className="text-destructive text-sm font-medium">
             {verifyEmail.error.message || "Verification failed. The link may have expired."}
           </p>
           <Button variant="outline" onClick={() => verifyEmail.reset()}>
@@ -100,7 +100,7 @@ export function VerifyEmailContent({ token, email }: VerifyEmailContentProps) {
   // No token — show "check your inbox" + resend form
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-muted-foreground text-sm">
         We sent a verification link to your email. Click the link to activate your account.
       </p>
 
@@ -138,8 +138,8 @@ export function VerifyEmailContent({ token, email }: VerifyEmailContentProps) {
         </Form>
       </div>
 
-      <p className="text-center text-sm text-muted-foreground">
-        <Link to="/login" className="font-medium underline underline-offset-4 hover:text-primary">
+      <p className="text-muted-foreground text-center text-sm">
+        <Link to="/login" className="hover:text-primary font-medium underline underline-offset-4">
           Back to sign in
         </Link>
       </p>
