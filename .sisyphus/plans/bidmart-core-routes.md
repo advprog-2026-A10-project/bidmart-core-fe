@@ -759,7 +759,7 @@ Critical Path: T1 → T2+T3 → T4–T8 (parallel) → T9–T12 (parallel) → T
   - Files: `app/modules/orders/presentation/pages/*.tsx`, `app/modules/orders/presentation/components/*.tsx`, `app/modules/orders/presentation/index.ts`
   - Pre-commit: `pnpm typecheck`
 
-- [ ] 9. Module 2 — Catalog route files (8 files)
+- [x] 9. Module 2 — Catalog route files (8 files)
 
   **What to do**:
   Create 8 thin route wrapper files in `app/routes/` for the catalog module. Each file has exactly the same structure: import the page component, export a default function that returns `<PageComponent />`.
@@ -821,7 +821,7 @@ Critical Path: T1 → T2+T3 → T4–T8 (parallel) → T9–T12 (parallel) → T
   - Files: `app/routes/_app.seller.listings.tsx`, `_app.seller.listings.new.tsx`, `_app.seller.listings.$listingId.tsx`, `_app.seller.listings.$listingId.edit.tsx`, `_app.seller.listings.$listingId.cancel.tsx`, `_app.catalog.tsx`, `_app.c.$.tsx`, `_app.listings.$listingId.tsx`
   - Pre-commit: `pnpm typecheck`
 
-- [ ] 10. Module 3 — Bidding route files (4 files)
+- [x] 10. Module 3 — Bidding route files (4 files)
 
   **What to do**:
   Create 4 thin route wrapper files for the bidding module.
@@ -872,7 +872,7 @@ Critical Path: T1 → T2+T3 → T4–T8 (parallel) → T9–T12 (parallel) → T
   - Files: `app/routes/_app.auctions.$auctionId.tsx`, `_app.auctions.$auctionId.history.tsx`, `_app.me.bids.tsx`, `_app.me.bids.$auctionId.tsx`
   - Pre-commit: `pnpm typecheck`
 
-- [ ] 11. Module 4 — Wallet route files (5 files)
+- [x] 11. Module 4 — Wallet route files (5 files)
 
   **What to do**:
   Create 5 thin route wrapper files for the wallet module.
@@ -924,7 +924,7 @@ Critical Path: T1 → T2+T3 → T4–T8 (parallel) → T9–T12 (parallel) → T
   - Files: `app/routes/_app.wallet.tsx`, `_app.wallet.topup.tsx`, `_app.wallet.withdraw.tsx`, `_app.wallet.transactions.tsx`, `_app.wallet.transactions.$transactionId.tsx`
   - Pre-commit: `pnpm typecheck`
 
-- [ ] 12. Module 5 — Orders & Notifications route files (9 files)
+- [x] 12. Module 5 — Orders & Notifications route files (9 files)
 
   **What to do**:
   Create 9 thin route wrapper files for the orders and notifications module.

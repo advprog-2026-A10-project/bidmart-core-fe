@@ -276,3 +276,118 @@ Ready to launch T4–T8 simultaneously — all module pages + components.
 - `pnpm typecheck` passed (exit 0) after fixing the external error in `orders` module.
 - All components use `shadcn` UI.
 - Forms use `react-hook-form` + `zod` with proper validation.
+
+## [2026-03-07] Task 11: Wallet Route Wrappers
+
+### Files Created
+
+- ✅ `app/routes/_app.wallet.tsx` — WalletPage
+- ✅ `app/routes/_app.wallet.topup.tsx` — TopUpPage
+- ✅ `app/routes/_app.wallet.withdraw.tsx` — WithdrawPage
+- ✅ `app/routes/_app.wallet.transactions.tsx` — TransactionsPage
+- ✅ `app/routes/_app.wallet.transactions.$transactionId.tsx` — TransactionDetailPage
+
+### Pattern Applied
+
+All 5 files follow the exact login.tsx pattern:
+```typescript
+import { PageComponent } from "~/modules/wallet/presentation";
+
+export default function RouteNameRoute() {
+  return <PageComponent />;
+}
+```
+
+### Verification
+
+- ✅ All imports verified against barrel exports in `app/modules/wallet/presentation/index.ts`
+- ✅ No loader/action added (thin wrappers only)
+- ✅ TypeScript code has no errors (tsc validation passed)
+- ✅ File structure matches React Router v7 conventions
+
+### Key Learning
+
+Thin route wrappers for Module 4 (Wallet) follow the established pattern from earlier modules. Five route files created without logic, importing only the page component from the presentation barrel. This unblocks nested routing for wallet features.
+
+## Task 9: Catalog Route Wrappers (Wave 4)
+
+### Files Created
+
+8 thin route wrapper files for Module 2 (Catalog):
+
+1. `app/routes/_app.seller.listings.tsx` → ListingsPanelPage
+2. `app/routes/_app.seller.listings.new.tsx` → NewListingPage
+3. `app/routes/_app.seller.listings.$listingId.tsx` → ListingDetailPage
+4. `app/routes/_app.seller.listings.$listingId.edit.tsx` → ListingEditPage
+5. `app/routes/_app.seller.listings.$listingId.cancel.tsx` → ListingCancelPage
+6. `app/routes/_app.catalog.tsx` → CatalogPanelPage
+7. `app/routes/_app.c.$.tsx` → CategoryPage
+8. `app/routes/_app.listings.$listingId.tsx` → BuyerListingDetailPage
+
+### Pattern Applied
+
+- Followed exact pattern from `app/routes/login.tsx`
+- Each file: import page component from barrel export + default function returning JSX
+- All imports from `~/modules/catalog/presentation` barrel
+- No loaders, actions, or business logic
+- 5-line minimal wrapper per file
+
+### Verification
+
+- ✅ All 8 files created in `app/routes/`
+- ✅ All imports resolve from barrel export
+- ✅ `pnpm typecheck` passed (exit 0, including typegen step)
+- ✅ No TypeScript errors on any route file
+
+### Key Insight
+
+React Router v7 route file naming convention:
+- `._app.seller.listings.tsx` → `/seller/listings`
+- `._app.seller.listings.new.tsx` → `/seller/listings/new`
+- `._app.seller.listings.$listingId.tsx` → `/seller/listings/:listingId`
+- `._app.seller.listings.$listingId.edit.tsx` → `/seller/listings/:listingId/edit`
+- `._app.c.$.tsx` → `/c/*` (splat route for categories)
+- `._app.listings.$listingId.tsx` → `/listings/:listingId`
+
+All route file naming auto-derives from filename convention.
+
+## [2026-03-07] Task 10: Bidding Route Wrappers (Wave 4)
+
+### Files Created
+
+- ✅ `app/routes/_app.auctions.$auctionId.tsx` → AuctionPage
+- ✅ `app/routes/_app.auctions.$auctionId.history.tsx` → AuctionHistoryPage  
+- ✅ `app/routes/_app.me.bids.tsx` → MyBidsPage
+- ✅ `app/routes/_app.me.bids.$auctionId.tsx` → BidDetailPage
+
+### Pattern Used
+
+All 4 routes follow the exact pattern established in Task 2 (login.tsx):
+
+```typescript
+import { PageComponent } from "~/modules/MODULE/presentation";
+
+export default function RouteFunction() {
+  return <PageComponent />;
+}
+```
+
+### Verification
+
+- ✅ All 4 files created in `app/routes/`
+- ✅ LSP diagnostics: ZERO errors on all 4 files
+- ✅ Imports resolve correctly from `~/modules/bidding/presentation`
+- ✅ Exports from barrel file confirmed (`index.ts` has all 4 page components)
+- ✅ No loaders/actions added (thin wrappers as required)
+
+### Route Hierarchy
+
+```
+_app (layout)
+├── auctions.$auctionId (detail)
+│   └── history (bid history tab)
+└── me (layout)
+    └── bids (my bids list)
+        └── $auctionId (bid detail)
+```
+
