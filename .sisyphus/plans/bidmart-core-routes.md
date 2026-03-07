@@ -981,7 +981,7 @@ Critical Path: T1 → T2+T3 → T4–T8 (parallel) → T9–T12 (parallel) → T
   - Files: all 9 route files listed above
   - Pre-commit: `pnpm typecheck`
 
-- [ ] 13. TypeCheck + Build + Playwright smoke test (full verification)
+- [x] 13. TypeCheck + Build + Playwright smoke test (full verification)
 
   **What to do**:
   Final integration check after all implementation tasks are complete.
