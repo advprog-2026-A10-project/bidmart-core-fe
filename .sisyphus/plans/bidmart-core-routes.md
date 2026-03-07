@@ -225,7 +225,7 @@ Critical Path: T1 → T2+T3 → T4–T8 (parallel) → T9–T12 (parallel) → T
   - Files: `app/shared/components/ui/*.tsx` (new files), `components.json`, `package.json`, `pnpm-lock.yaml`
   - Pre-commit: `pnpm typecheck`
 
-- [ ] 2. Add `_app.tsx` shared layout route
+- [x] 2. Add `_app.tsx` shared layout route
 
   **What to do**:
   - Create `app/routes/_app.tsx` — React Router v7 layout route that wraps all `_app.*` child routes
@@ -287,7 +287,7 @@ Critical Path: T1 → T2+T3 → T4–T8 (parallel) → T9–T12 (parallel) → T
   - Pre-commit: `pnpm typecheck`
 
 
-- [ ] 3. Create `constant.ts` mock payload files for all 4 modules
+- [x] 3. Create `constant.ts` mock payload files for all 4 modules
 
   **What to do**:
   Create typed mock payload constants for all 4 modules. Each file lives at `app/modules/{module}/presentation/pages/constant.ts`. Follow the exact pattern from `bidmart-auth-fe`: define local DTO interfaces inline, use `satisfies` for type safety, export a single named const.
@@ -375,7 +375,7 @@ Critical Path: T1 → T2+T3 → T4–T8 (parallel) → T9–T12 (parallel) → T
   - Files: `app/modules/catalog/presentation/pages/constant.ts`, `app/modules/bidding/presentation/pages/constant.ts`, `app/modules/wallet/presentation/pages/constant.ts`, `app/modules/orders/presentation/pages/constant.ts`
   - Pre-commit: `pnpm typecheck`
 
-- [ ] 4. Module 2 — Catalog Seller pages + components
+- [x] 4. Module 2 — Catalog Seller pages + components
 
   **What to do**:
   Create all Seller-side Catalog pages and their supporting form components. Seller role = managing their own listings.
@@ -457,7 +457,7 @@ Critical Path: T1 → T2+T3 → T4–T8 (parallel) → T9–T12 (parallel) → T
   - Files: `app/modules/catalog/presentation/pages/*.tsx`, `app/modules/catalog/presentation/components/*.tsx`, `app/modules/catalog/presentation/index.ts`
   - Pre-commit: `pnpm typecheck`
 
-- [ ] 5. Module 2 — Catalog Buyer pages + components
+- [x] 5. Module 2 — Catalog Buyer pages + components
 
   **What to do**:
   Create all Buyer-side Catalog pages. Buyer role = browsing and viewing listings.
@@ -527,7 +527,7 @@ Critical Path: T1 → T2+T3 → T4–T8 (parallel) → T9–T12 (parallel) → T
   - Files: `app/modules/catalog/presentation/pages/catalog-panel-page.tsx`, `category-page.tsx`, `buyer-listing-detail-page.tsx`, `app/modules/catalog/presentation/components/listing-card.tsx`, `search-filter-bar.tsx`
   - Pre-commit: `pnpm typecheck`
 
-- [ ] 6. Module 3 — Bidding pages + components
+- [x] 6. Module 3 — Bidding pages + components
 
   **What to do**:
   Create all Bidding module pages. This module is used by buyers to participate in auctions.
@@ -602,7 +602,7 @@ Critical Path: T1 → T2+T3 → T4–T8 (parallel) → T9–T12 (parallel) → T
   - Files: `app/modules/bidding/presentation/pages/*.tsx`, `app/modules/bidding/presentation/components/*.tsx`, `app/modules/bidding/presentation/index.ts`
   - Pre-commit: `pnpm typecheck`
 
-- [ ] 7. Module 4 — Wallet pages + components
+- [x] 7. Module 4 — Wallet pages + components
 
   **What to do**:
   Create all Wallet module pages for balance management, top-up, withdrawal, and transaction history.
@@ -678,7 +678,7 @@ Critical Path: T1 → T2+T3 → T4–T8 (parallel) → T9–T12 (parallel) → T
   - Files: `app/modules/wallet/presentation/pages/*.tsx`, `app/modules/wallet/presentation/components/*.tsx`, `app/modules/wallet/presentation/index.ts`
   - Pre-commit: `pnpm typecheck`
 
-- [ ] 8. Module 5 — Orders & Notifications pages + components
+- [x] 8. Module 5 — Orders & Notifications pages + components
 
   **What to do**:
   Create all Orders and Notifications pages. Module 5 covers: seller order management, buyer order tracking, and notification inbox.
