@@ -69,9 +69,12 @@ export function LoginForm({ onSubmit, isSubmitting = false }: LoginFormProps) {
           {isSubmitting ? "Signing in..." : "Sign in"}
         </Button>
 
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-center text-sm">
           Don&apos;t have an account?{" "}
-          <Link to="/register" className="font-medium underline underline-offset-4 hover:text-primary">
+          <Link
+            to="/register"
+            className="hover:text-primary font-medium underline underline-offset-4"
+          >
             Create one
           </Link>
         </p>

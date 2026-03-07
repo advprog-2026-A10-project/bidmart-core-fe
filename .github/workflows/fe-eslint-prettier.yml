@@ -1,0 +1,36 @@
+﻿name: fe-eslint-prettier
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - staging
+      - main
+  push:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+
+jobs:
+  eslint-prettier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install and run ESLint + Prettier
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm run lint
+          pnpm run format:check

@@ -50,11 +50,7 @@ export class EmailNotVerifiedError extends AuthError {
  */
 export class InvalidVerificationTokenError extends AuthError {
   constructor() {
-    super(
-      "Verification token is invalid or has expired.",
-      "INVALID_VERIFICATION_TOKEN",
-      400,
-    );
+    super("Verification token is invalid or has expired.", "INVALID_VERIFICATION_TOKEN", 400);
     this.name = "InvalidVerificationTokenError";
   }
 }
