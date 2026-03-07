@@ -1,0 +1,37 @@
+=== TASK 3: Constant Files TypeCheck Evidence ===
+Date: 2026-03-07
+Status: PASSED
+
+Files Created:
+1. app/modules/catalog/presentation/pages/constant.ts
+   - Export: CATALOG_MOCK_PAYLOADS
+   - Payloads: createListing, updateListing, cancelListing, searchCatalog, getListingDetail, mockListings, mockCurrentUser
+
+2. app/modules/bidding/presentation/pages/constant.ts
+   - Export: BIDDING_MOCK_PAYLOADS
+   - Payloads: placeBid, getAuctionDetail, getBidHistory, getMyBids, getBidDetail, mockAuction
+
+3. app/modules/wallet/presentation/pages/constant.ts
+   - Export: WALLET_MOCK_PAYLOADS
+   - Payloads: getWalletBalance, topUp, withdraw, getTransactions, getTransactionDetail, mockTransactions
+
+4. app/modules/orders/presentation/pages/constant.ts
+   - Export: ORDERS_MOCK_PAYLOADS
+   - Payloads: getSellerOrders, getSellerOrderDetail, updateShipping, getBuyerOrders, getBuyerOrderDetail, confirmOrder, createDispute, getNotifications, getNotificationDetail, markNotificationRead, mockOrders, mockNotifications
+
+Type Checking Result:
+pnpm typecheck PASSED (exit code 0)
+- All DTO interfaces defined inline (no any types)
+- All exports use 'satisfies' pattern for type safety
+- All exports have 'as const' assertion
+- Zero TypeScript errors
+- React Router typegen regenerated successfully
+
+Pattern Compliance:
+✓ Follows bidmart-auth-fe pattern exactly
+✓ Inline interface definitions
+✓ satisfies operator for type safety
+✓ as const on exported object
+✓ Single named export per file
+✓ Mock data realistic and comprehensive
+✓ All module imports using ~ alias work correctly
