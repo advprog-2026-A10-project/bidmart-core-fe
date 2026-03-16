@@ -1,5 +1,3 @@
-import { CategoryPage } from "~/modules/catalog/presentation";
-
 export default function CategoryRoute() {
-  return <CategoryPage />;
+  return <main>TODO</main>;
 }

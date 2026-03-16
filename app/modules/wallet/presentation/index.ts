@@ -1,13 +1,1 @@
-export * from "./pages/wallet-page";
 export { default as WalletPage } from "./pages/wallet-page";
-export * from "./pages/topup-page";
-export { default as TopUpPage } from "./pages/topup-page";
-export * from "./pages/withdraw-page";
-export { default as WithdrawPage } from "./pages/withdraw-page";
-export * from "./pages/transactions-page";
-export { default as TransactionsPage } from "./pages/transactions-page";
-export * from "./pages/transaction-detail-page";
-export { default as TransactionDetailPage } from "./pages/transaction-detail-page";
-export * from "./components/topup-form";
-export * from "./components/withdraw-form";
-export * from "./pages/constant";

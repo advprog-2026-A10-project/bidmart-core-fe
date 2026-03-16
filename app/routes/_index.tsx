@@ -1,9 +1,3 @@
-import { redirect } from "react-router";
-
-export async function loader() {
-  return redirect("/login");
-}
-
-export default function Index() {
-  return null;
+export default function IndexRoute() {
+  return <main>TODO</main>;
 }

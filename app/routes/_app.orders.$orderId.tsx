@@ -1,5 +1,3 @@
-import { BuyerOrderDetailPage } from "~/modules/orders/presentation";
-
 export default function BuyerOrderDetailRoute() {
-  return <BuyerOrderDetailPage />;
+  return <main>TODO</main>;
 }

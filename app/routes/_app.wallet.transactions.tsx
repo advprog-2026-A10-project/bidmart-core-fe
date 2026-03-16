@@ -1,5 +1,3 @@
-import { TransactionsPage } from "~/modules/wallet/presentation";
-
 export default function TransactionsRoute() {
-  return <TransactionsPage />;
+  return <main>TODO</main>;
 }
