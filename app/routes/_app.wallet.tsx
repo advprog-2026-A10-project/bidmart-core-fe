@@ -1,3 +1,5 @@
+import { WalletPage } from "~/modules/wallet/presentation";
+
 export default function WalletRoute() {
-  return <main>TODO</main>;
+  return <WalletPage />;
 }

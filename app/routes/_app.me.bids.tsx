@@ -1,3 +1,5 @@
+import { BiddingPage } from "~/modules/bidding/presentation";
+
 export default function MyBidsRoute() {
-  return <main>TODO</main>;
+  return <BiddingPage />;
 }

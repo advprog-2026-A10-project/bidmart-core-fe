@@ -1,3 +1,5 @@
+import { CatalogPage } from "~/modules/catalog/presentation";
+
 export default function CatalogRoute() {
-  return <main>TODO</main>;
+  return <CatalogPage />;
 }
