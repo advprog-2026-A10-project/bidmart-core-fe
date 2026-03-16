@@ -1,3 +1,5 @@
-export default function OrderConfirmRoute() {
-  return <main>TODO</main>;
+import { OrdersConfirmPage } from "~/modules/order/presentation";
+
+export default function OrdersConfirmRoute() {
+  return <OrdersConfirmPage />;
 }

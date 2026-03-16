@@ -1,3 +1,5 @@
-export default function CategoryRoute() {
-  return <main>TODO</main>;
+import { CategoryFilteringPage } from "~/modules/catalog/presentation";
+
+export default function CategoryFilteringRoute() {
+  return <CategoryFilteringPage />;
 }

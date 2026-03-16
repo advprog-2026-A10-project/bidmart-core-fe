@@ -1,3 +1,5 @@
-export default function AuctionHistoryRoute() {
-  return <main>TODO</main>;
+import { AuctionsHistoryPage } from "~/modules/bidding/presentation";
+
+export default function AuctionsHistoryRoute() {
+  return <AuctionsHistoryPage />;
 }

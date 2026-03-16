@@ -1,3 +1,5 @@
-export default function OrderDisputeRoute() {
-  return <main>TODO</main>;
+import { OrdersDisputePage } from "~/modules/order/presentation";
+
+export default function OrdersDisputeRoute() {
+  return <OrdersDisputePage />;
 }

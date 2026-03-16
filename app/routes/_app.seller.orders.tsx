@@ -1,3 +1,5 @@
+import { SellerOrdersPage } from "~/modules/order/presentation";
+
 export default function SellerOrdersRoute() {
-  return <main>TODO</main>;
+  return <SellerOrdersPage />;
 }

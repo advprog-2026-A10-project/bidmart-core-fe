@@ -1,3 +1,5 @@
-export default function AuctionRoute() {
-  return <main>TODO</main>;
+import { AuctionsDetailPage } from "~/modules/bidding/presentation";
+
+export default function AuctionsDetailRoute() {
+  return <AuctionsDetailPage />;
 }

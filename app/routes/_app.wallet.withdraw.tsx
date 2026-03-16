@@ -1,3 +1,5 @@
-export default function WithdrawRoute() {
-  return <main>TODO</main>;
+import { WalletWithdrawPage } from "~/modules/wallet/presentation";
+
+export default function WalletWithdrawRoute() {
+  return <WalletWithdrawPage />;
 }

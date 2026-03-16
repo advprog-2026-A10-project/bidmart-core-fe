@@ -1,3 +1,5 @@
-export default function TopUpRoute() {
-  return <main>TODO</main>;
+import { WalletTopupPage } from "~/modules/wallet/presentation";
+
+export default function WalletTopupRoute() {
+  return <WalletTopupPage />;
 }

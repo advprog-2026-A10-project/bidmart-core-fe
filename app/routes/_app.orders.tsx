@@ -1,5 +1,5 @@
-import { OrderPage } from "~/modules/order/presentation";
+import { OrdersPage } from "~/modules/order/presentation";
 
-export default function BuyerOrdersRoute() {
-  return <OrderPage />;
+export default function OrdersRoute() {
+  return <OrdersPage />;
 }

@@ -1,3 +1,5 @@
-export default function ListingEditRoute() {
-  return <main>TODO</main>;
+import { ListingsEditPage } from "~/modules/catalog/presentation";
+
+export default function ListingsEditRoute() {
+  return <ListingsEditPage />;
 }

@@ -1,3 +1,5 @@
-export default function ShippingUpdateRoute() {
-  return <main>TODO</main>;
+import { SellerOrdersShippingPage } from "~/modules/order/presentation";
+
+export default function SellerOrdersShippingRoute() {
+  return <SellerOrdersShippingPage />;
 }

@@ -1,3 +1,5 @@
-export default function NewListingRoute() {
-  return <main>TODO</main>;
+import { ListingsNewPage } from "~/modules/catalog/presentation";
+
+export default function ListingsNewRoute() {
+  return <ListingsNewPage />;
 }

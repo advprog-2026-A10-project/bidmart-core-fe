@@ -1,3 +1,5 @@
-export default function TransactionDetailRoute() {
-  return <main>TODO</main>;
+import { WalletTransactionsDetailPage } from "~/modules/wallet/presentation";
+
+export default function WalletTransactionsDetailRoute() {
+  return <WalletTransactionsDetailPage />;
 }

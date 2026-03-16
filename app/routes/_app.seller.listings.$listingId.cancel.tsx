@@ -1,3 +1,5 @@
-export default function ListingCancelRoute() {
-  return <main>TODO</main>;
+import { ListingsCancelPage } from "~/modules/catalog/presentation";
+
+export default function ListingsCancelRoute() {
+  return <ListingsCancelPage />;
 }

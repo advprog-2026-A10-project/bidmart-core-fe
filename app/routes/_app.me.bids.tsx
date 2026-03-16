@@ -1,5 +1,5 @@
 import { BiddingPage } from "~/modules/bidding/presentation";
 
-export default function MyBidsRoute() {
+export default function BiddingRoute() {
   return <BiddingPage />;
 }
