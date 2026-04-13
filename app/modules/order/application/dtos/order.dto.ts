@@ -1,9 +1,49 @@
-/**
- * Input DTOs — define the shape of data flowing into use-cases.
- * Use cases receive these from the presentation layer.
- */
+import type { OrderStage } from "~/modules/order/domain/entities/order";
+import type { NotificationEventPayload } from "~/modules/order/domain/entities/notification";
 
-// TODO: define input DTOs for each use-case, e.g.:
-// export type GetOrderDTO = {
-//   id: string;
-// };
+export type ListOrdersDTO = {
+  userId: string;
+  role: "buyer" | "seller";
+  stage?: OrderStage;
+  limit?: number;
+  offset?: number;
+};
+
+export type GetOrderDTO = {
+  orderId: string;
+};
+
+export type ConfirmOrderDTO = {
+  orderId: string;
+  actorId: string;
+};
+
+export type CreateDisputeDTO = {
+  orderId: string;
+  reporterId: string;
+  reason: string;
+  details?: string;
+};
+
+export type UpdateShippingStatusDTO = {
+  orderId: string;
+  status: string;
+  tracking?: string;
+};
+
+export type ListNotificationsDTO = {
+  userId: string;
+  limit?: number;
+  unreadOnly?: boolean;
+};
+
+export type GetNotificationDTO = {
+  notificationId: string;
+};
+
+export type MarkNotificationReadDTO = {
+  notificationId: string;
+  actorId: string;
+};
+
+export type PublishNotificationEventDTO = NotificationEventPayload;

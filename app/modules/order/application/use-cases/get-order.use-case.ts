@@ -1,12 +1,11 @@
+import type { Order } from "~/modules/order/domain/entities/order";
 import type { IOrderRepository } from "~/modules/order/domain/repositories/order-repository.interface";
+import type { GetOrderDTO } from "../dtos/order.dto";
 
-/**
- * GetOrderUseCase — TODO: describe what this use-case does.
- */
 export class GetOrderUseCase {
   constructor(private readonly orderRepository: IOrderRepository) {}
 
-  async execute(/* dto: TODO */): Promise<void> {
-    // TODO: implement use-case logic using this.orderRepository
+  async execute(dto: GetOrderDTO): Promise<Order> {
+    return this.orderRepository.getOrderById({ id: dto.orderId });
   }
 }
