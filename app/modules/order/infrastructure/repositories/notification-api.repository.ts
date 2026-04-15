@@ -16,7 +16,7 @@ export class NotificationApiRepository implements INotificationRepository {
     unreadOnly?: boolean;
   }): Promise<Notification[]> {
     const raw = await apiClient.get<{ data: NotificationApiResponse[] }>(this.basePath, {
-      params: {x
+      params: {
         userId: params.userId,
         limit: params.limit,
         unreadOnly: params.unreadOnly,

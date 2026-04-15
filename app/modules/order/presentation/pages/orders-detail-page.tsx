@@ -1,7 +1,11 @@
 "use client";
 
 import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Link, useParams } from "react-router";
 
+import type { Order } from "~/modules/order/domain/entities/order";
+import { getOrderUseCases } from "~/modules/order/infrastructure";
 import { Avatar, AvatarFallback } from "~/shared/components/ui/avatar";
 import { Badge } from "~/shared/components/ui/badge";
 import { Button } from "~/shared/components/ui/button";
@@ -13,7 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from "~/shared/components/ui/card";
-import { ScrollArea } from "~/shared/components/ui/scroll-area";
+import { Skeleton } from "~/shared/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -23,122 +27,125 @@ import {
   TableRow,
 } from "~/shared/components/ui/table";
 
-const orderDetail = {
-  id: "ORD-2048",
-  lot: "Banksy - Shredded Beauty",
-  status: "Awaiting Payment",
-  total: "$25,400,000",
-  endsAt: "Mar 25, 2026 � 23:59 GMT+7",
-  created: "Mar 22, 2026 � 09:41 GMT+7",
-  auction: "English Auction � Anti-sniping enabled",
-  buyerNote: "Auto-bid ceiling: $26M",
+const QUERY_KEY_ORDER_DETAIL = "order-detail";
+
+const badgeVariantByStatus: Record<string, "default" | "secondary" | "outline" | "destructive" | "ghost"> = {
+  "Awaiting Payment": "outline",
+  "In Transit": "default",
+  "Needs Confirmation": "secondary",
+  Delivered: "ghost",
+  "Dispute Closed": "ghost",
+  "Dispute Alert": "destructive",
 };
 
-const paymentDetails = [
-  { label: "Payment hold", value: "$24,900,000", meta: "Escrow released when funds settle" },
-  { label: "Deposit", value: "$500,000", meta: "Captured via gateway" },
-  { label: "Gateway", value: "BitPay Escrow", meta: "2FA & signature verified" },
-];
+function formatTimestamp(iso: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(iso));
+}
 
-const shippingDetails = [
-  { label: "Carrier", value: "FedEx Express", meta: "Tracking � 1234 5678 9012" },
-  { label: "Delivery window", value: "Mar 26 - 28, 2026", meta: "Eastern Europe route" },
-  { label: "Fulfillment", value: "ADR Logistics", meta: "Verified handler" },
-];
+function LoadingState() {
+  return (
+    <div className="container mx-auto space-y-6 px-4 py-8">
+      <Skeleton className="h-9 w-48" />
+      <Skeleton className="h-32 w-full" />
+      <div className="grid gap-4 md:grid-cols-3">
+        <Skeleton className="h-36 w-full" />
+        <Skeleton className="h-36 w-full" />
+        <Skeleton className="h-36 w-full" />
+      </div>
+      <Skeleton className="h-72 w-full" />
+    </div>
+  );
+}
 
-const timelineEvents = [
-  {
-    id: "tl-1",
-    title: "BidPlaced � Shredded Beauty",
-    detail: "VEL bumped the price to $26M and the auction extended 2 minutes.",
-    timestamp: "Just now",
-    tone: "bid",
-  },
-  {
-    id: "tl-2",
-    title: "PaymentHold � BitPay",
-    detail: "Escrow locked $24.9M once the bid stopped at $26M.",
-    timestamp: "3 minutes ago",
-    tone: "transaction",
-  },
-  {
-    id: "tl-3",
-    title: "ShipmentScheduled � ADR",
-    detail: "Pickup scheduled; tracking label created.",
-    timestamp: "27 minutes ago",
-    tone: "shipping",
-  },
-  {
-    id: "tl-4",
-    title: "OrderCreated � Market",
-    detail: "Order record seeded in BidMart central ledger.",
-    timestamp: "43 minutes ago",
-    tone: "system",
-  },
-];
+function SummaryCard({ title, value, helper }: { title: string; value: string; helper: string }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-xl font-semibold">{value}</p>
+        <p className="text-xs text-muted-foreground">{helper}</p>
+      </CardContent>
+    </Card>
+  );
+}
 
-type TimelineTone = (typeof timelineEvents)[number]["tone"];
+function Content({ order }: { order: Order }) {
+  const financialRows = [
+    { label: "Order total", value: order.total, notes: "Current order amount from API" },
+    { label: "Currency", value: order.currency, notes: "Quoted transaction currency" },
+    { label: "Created at", value: formatTimestamp(order.createdAt), notes: "Order record timestamp" },
+    { label: "Updated at", value: formatTimestamp(order.updatedAt), notes: "Latest state update" },
+  ];
 
-const timelineToneVariant: Record<TimelineTone, "default" | "secondary" | "outline" | "destructive" | "ghost"> = {
-  bid: "secondary",
-  transaction: "default",
-  shipping: "outline",
-  system: "ghost",
-};
-
-const participants = [
-  { name: "VEL", role: "Buyer", status: "Active" },
-  { name: "ADR", role: "Seller", status: "Verified" },
-  { name: "KRL", role: "Auctioneer", status: "Monitoring" },
-];
-
-const breakdownRows = [
-  { label: "Hammer price", value: "$25,000,000", notes: "Base model + premium" },
-  { label: "Marketplace fee (2%)", value: "$500,000", notes: "Escrow + notifications" },
-  { label: "Shipping hold", value: "$100,000", notes: "Insured artwork" },
-  { label: "Net payout", value: "$24,400,000", notes: "To seller after release" },
-];
-
-export default function OrdersDetailPage() {
   return (
     <div className="container mx-auto space-y-6 px-4 py-8">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Order</p>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            {orderDetail.lot}
-          </h1>
+          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Order Detail</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{order.lot}</h1>
           <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-            <Badge variant="secondary">{orderDetail.status}</Badge>
-            <span>Order #{orderDetail.id}</span>
-            <span>Ends {orderDetail.endsAt}</span>
+            <Badge variant={badgeVariantByStatus[order.status] ?? "outline"}>{order.status}</Badge>
+            <span>Order #{order.id}</span>
+            <span>Last activity: {order.lastActivity}</span>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm">
-            Capture payment
+          <Button asChild variant="outline" size="sm">
+            <Link to="/orders">Back to orders</Link>
           </Button>
           <Button size="sm">Share</Button>
         </div>
       </header>
 
       <div className="grid gap-4 md:grid-cols-3">
+        <SummaryCard title="Total" value={order.total} helper="Order amount from backend" />
+        <SummaryCard title="Stage" value={order.stage} helper="Lifecycle stage" />
+        <SummaryCard title="Currency" value={order.currency} helper="Settlement currency" />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Snapshot</CardTitle>
-            <CardDescription>Key metadata for this order.</CardDescription>
+            <CardTitle>Order snapshot</CardTitle>
+            <CardDescription>Primary order fields from `/orders/:orderId`.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-3xl font-semibold text-foreground">{orderDetail.total}</p>
-            <p className="text-xs text-muted-foreground">{orderDetail.created}</p>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Auction</span>
-                <span>{orderDetail.auction}</span>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <p className="text-xs text-muted-foreground">Buyer</p>
+                <p className="text-sm font-medium">{order.buyerId}</p>
               </div>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Buyer note</span>
-                <span>{orderDetail.buyerNote}</span>
+              <div>
+                <p className="text-xs text-muted-foreground">Seller</p>
+                <p className="text-sm font-medium">{order.sellerId}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Created</p>
+                <p className="text-sm font-medium">{formatTimestamp(order.createdAt)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Updated</p>
+                <p className="text-sm font-medium">{formatTimestamp(order.updatedAt)}</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">Tags</p>
+              <div className="flex flex-wrap gap-2">
+                {order.tags.length === 0 ? (
+                  <Badge variant="ghost">No tags</Badge>
+                ) : (
+                  order.tags.map((tag) => (
+                    <Badge key={tag} variant="ghost">
+                      {tag}
+                    </Badge>
+                  ))
+                )}
               </div>
             </div>
           </CardContent>
@@ -146,113 +153,56 @@ export default function OrdersDetailPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Payment</CardTitle>
-            <CardDescription>Escrow + capture status</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {paymentDetails.map((detail) => (
-              <div key={detail.label} className="flex items-center justify-between text-sm">
-                <div className="text-xs text-muted-foreground">{detail.label}</div>
-                <div className="text-right">
-                  <p className="font-medium">{detail.value}</p>
-                  <p className="text-xs text-muted-foreground">{detail.meta}</p>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Fulfillment</CardTitle>
-            <CardDescription>Shipping + logistics</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {shippingDetails.map((detail) => (
-              <div key={detail.label} className="flex items-center justify-between text-sm">
-                <div className="text-xs text-muted-foreground">{detail.label}</div>
-                <div className="text-right">
-                  <p className="font-medium">{detail.value}</p>
-                  <p className="text-xs text-muted-foreground">{detail.meta}</p>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-        <Card className="flex flex-col">
-          <CardHeader>
-            <CardTitle>Timeline</CardTitle>
-            <CardDescription>Every event that touched this order.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[360px] rounded-2xl border border-border">
-              <div className="flex flex-col gap-4 p-4">
-                {timelineEvents.map((event) => (
-                  <div key={event.id} className="space-y-1 rounded-2xl border border-border/70 bg-muted/60 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-foreground">{event.title}</p>
-                      <span className="text-xs text-muted-foreground">{event.timestamp}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{event.detail}</p>
-                    <Badge variant={timelineToneVariant[event.tone]}>
-                      {event.tone.toUpperCase()}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-
-        <Card className="flex flex-col">
-          <CardHeader>
             <CardTitle>Participants</CardTitle>
-            <CardDescription>Stakeholders currently monitoring this order.</CardDescription>
+            <CardDescription>Accounts tied to this order.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {participants.map((participant) => (
-              <div key={participant.name} className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarFallback>{participant.name.slice(0, 2)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{participant.name}</p>
-                    <p className="text-xs text-muted-foreground">{participant.role}</p>
-                  </div>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback>{order.buyerId.slice(0, 2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-sm font-medium">{order.buyerId}</p>
+                  <p className="text-xs text-muted-foreground">Buyer</p>
                 </div>
-                <Badge variant="outline">{participant.status}</Badge>
               </div>
-            ))}
+              <Badge variant="outline">Active</Badge>
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback>{order.sellerId.slice(0, 2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-sm font-medium">{order.sellerId}</p>
+                  <p className="text-xs text-muted-foreground">Seller</p>
+                </div>
+              </div>
+              <Badge variant="outline">Verified</Badge>
+            </div>
           </CardContent>
-          <CardFooter className="flex items-center justify-between gap-2">
-            <span className="text-xs text-muted-foreground">Synced 8s ago</span>
-            <Button size="sm" variant="ghost">
-              Contact support
-            </Button>
-          </CardFooter>
+          <CardFooter className="text-xs text-muted-foreground">Data source is API-driven.</CardFooter>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Financial breakdown</CardTitle>
-          <CardDescription>Route transparency for the order payout.</CardDescription>
+          <CardDescription>Simple detail table until payment endpoints are integrated.</CardDescription>
         </CardHeader>
         <CardContent className="px-0">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Line item</TableHead>
-                <TableHead>Amount</TableHead>
+                <TableHead>Value</TableHead>
                 <TableHead>Notes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {breakdownRows.map((row) => (
+              {financialRows.map((row) => (
                 <TableRow key={row.label}>
                   <TableCell>{row.label}</TableCell>
                   <TableCell className="font-semibold">{row.value}</TableCell>
@@ -267,4 +217,47 @@ export default function OrdersDetailPage() {
       </Card>
     </div>
   );
+}
+
+export default function OrdersDetailPage() {
+  const { orderId = "" } = useParams();
+  const useCases = React.useMemo(() => getOrderUseCases(), []);
+
+  const orderQuery = useQuery({
+    queryKey: [QUERY_KEY_ORDER_DETAIL, orderId],
+    enabled: Boolean(orderId),
+    queryFn: () =>
+      useCases.getOrder.execute({
+        orderId,
+      }),
+  });
+
+  if (orderQuery.isLoading) {
+    return <LoadingState />;
+  }
+
+  if (orderQuery.isError || !orderQuery.data) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card className="border-destructive/30">
+          <CardHeader>
+            <CardTitle>Order detail not available</CardTitle>
+            <CardDescription>
+              We could not load this order from `/orders/:orderId`. Please verify the id or backend state.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-3">
+            <Button asChild variant="outline">
+              <Link to="/orders">Back to orders</Link>
+            </Button>
+            <Button variant="outline" onClick={() => void orderQuery.refetch()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return <Content order={orderQuery.data} />;
 }

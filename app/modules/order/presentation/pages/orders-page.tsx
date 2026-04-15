@@ -1,7 +1,12 @@
 "use client";
 
 import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router";
 
+import type { Notification } from "~/modules/order/domain/entities/notification";
+import type { Order } from "~/modules/order/domain/entities/order";
+import { getOrderUseCases } from "~/modules/order/infrastructure";
 import { Badge } from "~/shared/components/ui/badge";
 import { Button } from "~/shared/components/ui/button";
 import {
@@ -13,6 +18,7 @@ import {
   CardTitle,
 } from "~/shared/components/ui/card";
 import { ScrollArea } from "~/shared/components/ui/scroll-area";
+import { Skeleton } from "~/shared/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -43,118 +49,9 @@ const stageFilters = [
 
 type OrderStage = (typeof stageFilters)[number]["value"];
 
-type OrderRow = {
-  id: string;
-  item: string;
-  stage: OrderStage;
-  customer: string;
-  status: string;
-  amount: string;
-  lastActivity: string;
-  tags: string[];
-};
-
-type NotificationTone = "bid" | "winner" | "system" | "alert";
-
-const sampleOrders: OrderRow[] = [
-  {
-    id: "ORD-2048",
-    item: "Banksy - Shredded Beauty",
-    stage: "active",
-    customer: "VEL (Buyer)",
-    status: "Awaiting Payment",
-    amount: "$25,400,000",
-    lastActivity: "2 minutes ago",
-    tags: ["Escrow pending", "Anti-sniping"],
-  },
-  {
-    id: "ORD-1992",
-    item: "Banksy - Flower Thrower",
-    stage: "active",
-    customer: "KRL (Buyer)",
-    status: "Awaiting Payment",
-    amount: "$1,250,000",
-    lastActivity: "6 minutes ago",
-    tags: ["Proxy bid", "High velocity"],
-  },
-  {
-    id: "ORD-1901",
-    item: "Banksy - Love is in the Air",
-    stage: "processing",
-    customer: "ADR (Seller)",
-    status: "In Transit",
-    amount: "$8,300,000",
-    lastActivity: "14 minutes ago",
-    tags: ["Courier: FedEx", "Signature required"],
-  },
-  {
-    id: "ORD-1830",
-    item: "Banksy - Peacekeeper",
-    stage: "processing",
-    customer: "DDL (Seller)",
-    status: "Needs Confirmation",
-    amount: "$3,720,000",
-    lastActivity: "23 minutes ago",
-    tags: ["Delivery pending", "Tracking live"],
-  },
-  {
-    id: "ORD-1758",
-    item: "Banksy - Visual Protest",
-    stage: "completed",
-    customer: "VEL (Buyer)",
-    status: "Delivered",
-    amount: "$9,100,000",
-    lastActivity: "1 day ago",
-    tags: ["Receipt archived", "Survey sent"],
-  },
-  {
-    id: "ORD-1703",
-    item: "Banksy - Tagger",
-    stage: "completed",
-    customer: "KRL (Buyer)",
-    status: "Dispute Closed",
-    amount: "$4,400,000",
-    lastActivity: "2 days ago",
-    tags: ["Refunded", "Lessons logged"],
-  },
-];
-
-const notificationEvents: Array<{
-  id: string;
-  title: string;
-  detail: string;
-  timestamp: string;
-  tone: NotificationTone;
-}> = [
-  {
-    id: "evt-1",
-    title: "BidPlaced � Banksy Shredded Beauty",
-    detail: "VEL increased the bid to $26M; anti-sniping clock extended two minutes.",
-    timestamp: "Just now",
-    tone: "bid",
-  },
-  {
-    id: "evt-2",
-    title: "WinnerDetermined � Banksy Tagger",
-    detail: "KRL won the lot; funds reserved and order created for confirmation.",
-    timestamp: "12 minutes ago",
-    tone: "winner",
-  },
-  {
-    id: "evt-3",
-    title: "OrderReminder � Banksy Peacekeeper",
-    detail: "Courier ADR notified to confirm pickup window for courier leg.",
-    timestamp: "35 minutes ago",
-    tone: "system",
-  },
-  {
-    id: "evt-4",
-    title: "DisputeAlert � Banksy Flower Thrower",
-    detail: "Seller reported mismatch between tracking data and insurance record.",
-    timestamp: "1 hour ago",
-    tone: "alert",
-  },
-];
+const CURRENT_USER_ID = "buyer-vel";
+const QUERY_KEY_ORDERS = "orders-page-orders";
+const QUERY_KEY_NOTIFICATIONS = "orders-page-notifications";
 
 const badgeVariantByStatus: Record<string, "default" | "secondary" | "outline" | "destructive" | "ghost"> = {
   "Awaiting Payment": "outline",
@@ -165,44 +62,65 @@ const badgeVariantByStatus: Record<string, "default" | "secondary" | "outline" |
   "Dispute Alert": "destructive",
 };
 
-const notificationToneLabel: Record<NotificationTone, string> = {
-  bid: "BidPlaced",
-  winner: "WinnerDetermined",
-  system: "System",
-  alert: "Alert",
+const notificationToneVariant: Record<Notification["type"], "default" | "secondary" | "outline" | "destructive" | "ghost"> = {
+  BidPlaced: "secondary",
+  WinnerDetermined: "default",
+  OrderUpdate: "outline",
+  System: "ghost",
 };
 
-const notificationToneVariant: Record<NotificationTone, "default" | "secondary" | "outline" | "destructive" | "ghost"> = {
-  bid: "secondary",
-  winner: "default",
-  system: "outline",
-  alert: "destructive",
-};
+function formatTimestamp(iso: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(iso));
+}
 
 export default function OrdersPage() {
   const [selectedStage, setSelectedStage] = React.useState<OrderStage>(stageFilters[0].value);
+  const useCases = React.useMemo(() => getOrderUseCases(), []);
 
-  const filteredOrders = sampleOrders.filter((order) => order.stage === selectedStage);
+  const ordersQuery = useQuery({
+    queryKey: [QUERY_KEY_ORDERS, selectedStage],
+    queryFn: () =>
+      useCases.listOrders.execute({
+        userId: CURRENT_USER_ID,
+        role: "buyer",
+        stage: selectedStage,
+      }),
+  });
+
+  const notificationsQuery = useQuery({
+    queryKey: [QUERY_KEY_NOTIFICATIONS],
+    queryFn: () =>
+      useCases.listNotifications.execute({
+        userId: CURRENT_USER_ID,
+        limit: 10,
+      }),
+  });
+
+  const orders = ordersQuery.data ?? [];
+  const notifications = notificationsQuery.data ?? [];
   const stageDescription = stageFilters.find((stage) => stage.value === selectedStage)?.description;
 
   const summaryStats = [
     {
       title: "Live orders",
-      value: `${sampleOrders.filter((order) => order.stage === "active").length}`,
-      trend: "+2 vs last checkpoint",
-      description: "Winning bids that are waiting for payment or escrow captures.",
+      value: `${orders.filter((order) => order.stage === "active").length}`,
+      trend: "Buy-side",
+      description: "Winning bids waiting for payment or escrow capture.",
     },
     {
       title: "In flight",
-      value: `${sampleOrders.filter((order) => order.stage === "processing").length}`,
-      trend: "Ready to ship",
-      description: "Courier handoffs and confirmations being watched live.",
+      value: `${orders.filter((order) => order.stage === "processing").length}`,
+      trend: "Fulfillment",
+      description: "Courier handoffs and confirmations in progress.",
     },
     {
       title: "Settled",
-      value: `${sampleOrders.filter((order) => order.stage === "completed").length}`,
-      trend: "Stable",
-      description: "Delivered or archived orders that are fully reconciled.",
+      value: `${orders.filter((order) => order.stage === "completed").length}`,
+      trend: "Archive",
+      description: "Delivered or closed orders already reconciled.",
     },
   ];
 
@@ -211,16 +129,18 @@ export default function OrdersPage() {
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Order center</p>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Orders & notifications</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Orders and notifications</h1>
           <p className="text-sm text-muted-foreground">
-            Track every order lifecycle, ensure notification delivery, and keep the BidMart marketplace synchronized.
+            Track order lifecycle and recent notification events from the live API contract.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm">
-            Sync statuses
+          <Button variant="outline" size="sm" onClick={() => void ordersQuery.refetch()}>
+            Refresh orders
           </Button>
-          <Button size="sm">Create order</Button>
+          <Button variant="outline" size="sm" onClick={() => void notificationsQuery.refetch()}>
+            Refresh notifications
+          </Button>
         </div>
       </div>
 
@@ -257,12 +177,13 @@ export default function OrdersPage() {
               </TabsList>
             </Tabs>
           </CardHeader>
+
           <CardContent className="px-0 pb-0">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Order</TableHead>
-                  <TableHead>Customer</TableHead>
+                  <TableHead>Seller</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Updated</TableHead>
@@ -270,10 +191,37 @@ export default function OrdersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredOrders.map((order) => (
+                {ordersQuery.isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6}>
+                      <div className="space-y-2">
+                        <Skeleton className="h-6 w-full" />
+                        <Skeleton className="h-6 w-3/4" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+
+                {ordersQuery.isError ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-sm text-destructive">
+                      Unable to load orders for this stage right now.
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+
+                {!ordersQuery.isLoading && !ordersQuery.isError && orders.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-sm text-muted-foreground">
+                      No orders available for the selected stage.
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+
+                {orders.map((order: Order) => (
                   <TableRow key={order.id}>
                     <TableCell className="space-y-1">
-                      <p className="text-sm font-semibold text-foreground">{order.item}</p>
+                      <p className="text-sm font-semibold text-foreground">{order.lot}</p>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         <span>{order.id}</span>
                         {order.tags.map((tag) => (
@@ -284,19 +232,17 @@ export default function OrdersPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <p className="text-sm font-medium">{order.customer}</p>
-                      <p className="text-xs text-muted-foreground">Auction module</p>
+                      <p className="text-sm font-medium">{order.sellerId}</p>
+                      <p className="text-xs text-muted-foreground">Seller account</p>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={badgeVariantByStatus[order.status] ?? "outline"}>
-                        {order.status}
-                      </Badge>
+                      <Badge variant={badgeVariantByStatus[order.status] ?? "outline"}>{order.status}</Badge>
                     </TableCell>
-                    <TableCell className="font-semibold">{order.amount}</TableCell>
+                    <TableCell className="font-semibold">{order.total}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{order.lastActivity}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm">
-                        View
+                      <Button asChild variant="ghost" size="sm">
+                        <Link to={`/orders/${order.id}`}>View</Link>
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -306,10 +252,10 @@ export default function OrdersPage() {
           </CardContent>
           <CardFooter className="flex items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">
-              Updated from Auction, Wallet, and Notification modules every 30 seconds.
+              Data source: `/orders` filtered by stage and current buyer.
             </p>
-            <Button size="sm" variant="outline">
-              Export CSV
+            <Button asChild size="sm" variant="outline">
+              <Link to="/notifications">Open notifications</Link>
             </Button>
           </CardFooter>
         </Card>
@@ -317,33 +263,46 @@ export default function OrdersPage() {
         <Card className="flex flex-col">
           <CardHeader>
             <CardTitle>Recent notifications</CardTitle>
-            <CardDescription>Streams that triggered order state changes.</CardDescription>
+            <CardDescription>Latest events from `/notifications`.</CardDescription>
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[340px] rounded-2xl border border-border">
               <div className="flex flex-col gap-3 p-4">
-                {notificationEvents.map((event) => (
+                {notificationsQuery.isLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-full" />
+                    <Skeleton className="h-6 w-5/6" />
+                  </div>
+                ) : null}
+
+                {notificationsQuery.isError ? (
+                  <p className="text-xs text-destructive">Unable to load recent notifications.</p>
+                ) : null}
+
+                {!notificationsQuery.isLoading && !notificationsQuery.isError && notifications.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No notifications available yet.</p>
+                ) : null}
+
+                {notifications.map((event) => (
                   <div
                     key={event.id}
                     className="flex flex-col gap-1 rounded-2xl border border-border/70 bg-muted/50 p-3"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-semibold text-foreground">{event.title}</p>
-                      <span className="text-xs text-muted-foreground">{event.timestamp}</span>
+                      <span className="text-xs text-muted-foreground">{formatTimestamp(event.createdAt)}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">{event.detail}</p>
-                    <Badge variant={notificationToneVariant[event.tone]}>
-                      {notificationToneLabel[event.tone]}
-                    </Badge>
+                    <p className="text-xs text-muted-foreground">{event.body}</p>
+                    <Badge variant={notificationToneVariant[event.type]}>{event.type}</Badge>
                   </div>
                 ))}
               </div>
             </ScrollArea>
           </CardContent>
           <CardFooter className="flex items-center justify-between gap-2">
-            <p className="text-xs text-muted-foreground">Notifications are persisted, deduped, and ready for downstream consumers.</p>
-            <Button size="sm" variant="ghost">
-              View stream
+            <p className="text-xs text-muted-foreground">Notification stream is now API-driven.</p>
+            <Button variant="ghost" size="sm" onClick={() => void notificationsQuery.refetch()}>
+              Reload stream
             </Button>
           </CardFooter>
         </Card>
