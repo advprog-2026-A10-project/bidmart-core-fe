@@ -1,1 +1,2 @@
-export * from "./order.dto";
+export * from "./orders.dto";
+export * from "./notifications.dto";

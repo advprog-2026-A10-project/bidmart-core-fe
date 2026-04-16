@@ -1,5 +1,5 @@
 import type { INotificationRepository } from "~/modules/order/domain/repositories/order-repository.interface";
-import type { MarkNotificationReadDTO } from "../dtos/order.dto";
+import type { MarkNotificationReadDTO } from "../dtos/notifications.dto";
 
 export class MarkNotificationReadUseCase {
   constructor(private readonly notificationRepository: INotificationRepository) {}

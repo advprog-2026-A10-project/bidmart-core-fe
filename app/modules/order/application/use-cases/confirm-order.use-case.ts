@@ -1,5 +1,5 @@
 import type { IOrderRepository } from "~/modules/order/domain/repositories/order-repository.interface";
-import type { ConfirmOrderDTO } from "../dtos/order.dto";
+import type { ConfirmOrderDTO } from "../dtos/orders.dto";
 
 export class ConfirmOrderUseCase {
   constructor(private readonly orderRepository: IOrderRepository) {}

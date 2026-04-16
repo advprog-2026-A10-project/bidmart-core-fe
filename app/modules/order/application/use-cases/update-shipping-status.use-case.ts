@@ -1,5 +1,5 @@
 import type { IOrderRepository } from "~/modules/order/domain/repositories/order-repository.interface";
-import type { UpdateShippingStatusDTO } from "../dtos/order.dto";
+import type { UpdateShippingStatusDTO } from "../dtos/orders.dto";
 
 export class UpdateShippingStatusUseCase {
   constructor(private readonly orderRepository: IOrderRepository) {}

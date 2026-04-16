@@ -1,5 +1,5 @@
 import type { IOrderRepository } from "~/modules/order/domain/repositories/order-repository.interface";
-import type { CreateDisputeDTO } from "../dtos/order.dto";
+import type { CreateDisputeDTO } from "../dtos/orders.dto";
 
 export class CreateDisputeUseCase {
   constructor(private readonly orderRepository: IOrderRepository) {}

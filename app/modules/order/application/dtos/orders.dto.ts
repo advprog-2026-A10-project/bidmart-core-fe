@@ -1,5 +1,4 @@
 import type { OrderStage } from "~/modules/order/domain/entities/order";
-import type { NotificationEventPayload } from "~/modules/order/domain/entities/notification";
 
 export type ListOrdersDTO = {
   userId: string;
@@ -30,20 +29,3 @@ export type UpdateShippingStatusDTO = {
   status: string;
   tracking?: string;
 };
-
-export type ListNotificationsDTO = {
-  userId: string;
-  limit?: number;
-  unreadOnly?: boolean;
-};
-
-export type GetNotificationDTO = {
-  notificationId: string;
-};
-
-export type MarkNotificationReadDTO = {
-  notificationId: string;
-  actorId: string;
-};
-
-export type PublishNotificationEventDTO = NotificationEventPayload;

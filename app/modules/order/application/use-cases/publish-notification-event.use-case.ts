@@ -1,5 +1,5 @@
 import type { INotificationRepository } from "~/modules/order/domain/repositories/order-repository.interface";
-import type { PublishNotificationEventDTO } from "../dtos/order.dto";
+import type { PublishNotificationEventDTO } from "../dtos/notifications.dto";
 
 export class PublishNotificationEventUseCase {
   constructor(private readonly notificationRepository: INotificationRepository) {}
