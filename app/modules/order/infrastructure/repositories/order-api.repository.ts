@@ -33,12 +33,12 @@ export class OrderApiRepository implements IOrderRepository {
   }
 
   async confirmOrder(params: { orderId: string; actorId: string }): Promise<void> {
-    await apiClient.post(`${this.basePath}/${params.orderId}/confirm`, { actorId: params.actorId });
+    await apiClient.post(`${this.basePath}/${params.orderId}/confirm`, { actor_id: params.actorId });
   }
 
   async createDispute(params: { orderId: string; reporterId: string; reason: string; details?: string }): Promise<void> {
     await apiClient.post(`${this.basePath}/${params.orderId}/dispute/new`, {
-      reporterId: params.reporterId,
+      reporter_id: params.reporterId,
       reason: params.reason,
       details: params.details,
     });

@@ -98,7 +98,12 @@ function Content({ order }: { order: Order }) {
           <Button asChild variant="outline" size="sm">
             <Link to="/orders">Back to orders</Link>
           </Button>
-          <Button size="sm">Share</Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to={`/orders/${order.id}/confirm`}>Confirm receipt</Link>
+          </Button>
+          <Button asChild size="sm">
+            <Link to={`/orders/${order.id}/dispute/new`}>Create dispute</Link>
+          </Button>
         </div>
       </header>
 
