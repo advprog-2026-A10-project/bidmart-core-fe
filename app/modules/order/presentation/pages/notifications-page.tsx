@@ -6,6 +6,7 @@ import { Link } from "react-router";
 
 import type { Notification } from "~/modules/order/domain/entities/notification";
 import { getOrderUseCases } from "~/modules/order/infrastructure";
+import { getOrderUiErrorMessage } from "~/modules/order/presentation/error-message";
 import { Badge } from "~/shared/components/ui/badge";
 import { Button } from "~/shared/components/ui/button";
 import {
@@ -76,6 +77,15 @@ export default function NotificationsPage() {
       await queryClient.invalidateQueries({ queryKey: [QUERY_KEY_NOTIFICATIONS] });
     },
   });
+
+  const notificationsLoadErrorMessage = getOrderUiErrorMessage(
+    notificationsQuery.error,
+    "Unable to load notifications right now.",
+  );
+  const markAsReadErrorMessage = getOrderUiErrorMessage(
+    markAsReadMutation.error,
+    "Unable to mark notification as read.",
+  );
 
   const notifications = notificationsQuery.data ?? [];
   const unreadCount = notifications.filter((notification) => !notification.readAt).length;
@@ -167,7 +177,7 @@ export default function NotificationsPage() {
               {notificationsQuery.isError ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-sm text-destructive">
-                    Unable to load notifications right now.
+                    {notificationsLoadErrorMessage}
                   </TableCell>
                 </TableRow>
               ) : null}
@@ -220,6 +230,9 @@ export default function NotificationsPage() {
               })}
             </TableBody>
           </Table>
+          {markAsReadMutation.isError ? (
+            <p className="px-6 pb-4 text-sm text-destructive">{markAsReadErrorMessage}</p>
+          ) : null}
         </CardContent>
         <CardFooter className="text-xs text-muted-foreground">
           Mark-as-read action uses `PATCH /notifications/:notificationId/read`.

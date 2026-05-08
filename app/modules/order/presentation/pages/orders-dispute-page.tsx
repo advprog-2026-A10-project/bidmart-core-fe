@@ -5,6 +5,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { getOrderUseCases } from "~/modules/order/infrastructure";
+import { getOrderUiErrorMessage } from "~/modules/order/presentation/error-message";
 import { Button } from "~/shared/components/ui/button";
 import {
   Card,
@@ -45,6 +46,15 @@ export default function OrdersDisputePage() {
       }),
   });
 
+  const orderLoadErrorMessage = getOrderUiErrorMessage(
+    orderQuery.error,
+    "We could not load this order for dispute submission.",
+  );
+  const disputeErrorMessage = getOrderUiErrorMessage(
+    disputeMutation.error,
+    "Failed to submit dispute. Please retry.",
+  );
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -77,7 +87,7 @@ export default function OrdersDisputePage() {
         <Card className="border-destructive/30">
           <CardHeader>
             <CardTitle>Order not found</CardTitle>
-            <CardDescription>We could not load this order for dispute submission.</CardDescription>
+            <CardDescription>{orderLoadErrorMessage}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             <Button asChild variant="outline">
@@ -155,7 +165,7 @@ export default function OrdersDisputePage() {
 
               {disputeMutation.isError ? (
                 <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  Failed to submit dispute. Please retry.
+                  {disputeErrorMessage}
                 </p>
               ) : null}
 

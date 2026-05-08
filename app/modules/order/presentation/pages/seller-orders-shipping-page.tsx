@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
 
 import { getOrderUseCases } from "~/modules/order/infrastructure";
+import { getOrderUiErrorMessage } from "~/modules/order/presentation/error-message";
 import { Button } from "~/shared/components/ui/button";
 import {
   Card,
@@ -63,6 +64,15 @@ export default function SellerOrdersShippingPage() {
     },
   });
 
+  const orderLoadErrorMessage = getOrderUiErrorMessage(
+    orderQuery.error,
+    "Unable to load this order for shipping update.",
+  );
+  const updateShippingErrorMessage = getOrderUiErrorMessage(
+    updateShippingMutation.error,
+    "Failed to update shipping status. Please retry.",
+  );
+
   if (orderQuery.isLoading) {
     return (
       <div className="container mx-auto space-y-4 px-4 py-8">
@@ -78,7 +88,7 @@ export default function SellerOrdersShippingPage() {
         <Card className="border-destructive/30">
           <CardHeader>
             <CardTitle>Shipping update not available</CardTitle>
-            <CardDescription>Unable to load this order for shipping update.</CardDescription>
+            <CardDescription>{orderLoadErrorMessage}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             <Button asChild variant="outline">
@@ -98,7 +108,7 @@ export default function SellerOrdersShippingPage() {
         <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Seller portal</p>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Update shipping status</h1>
         <p className="text-sm text-muted-foreground">
-          Lot: {order.lot} · Order #{order.id}
+          Lot: {order.lot} - Order #{order.id}
         </p>
       </div>
 
@@ -142,7 +152,7 @@ export default function SellerOrdersShippingPage() {
 
           {updateShippingMutation.isError ? (
             <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              Failed to update shipping status. Please retry.
+              {updateShippingErrorMessage}
             </p>
           ) : null}
 

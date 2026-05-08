@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
 
 import { getOrderUseCases } from "~/modules/order/infrastructure";
+import { getOrderUiErrorMessage } from "~/modules/order/presentation/error-message";
 import { Badge } from "~/shared/components/ui/badge";
 import { Button } from "~/shared/components/ui/button";
 import {
@@ -35,6 +36,11 @@ export default function SellerOrdersDetailPage() {
     queryFn: () => useCases.getOrder.execute({ orderId }),
   });
 
+  const orderLoadErrorMessage = getOrderUiErrorMessage(
+    orderQuery.error,
+    "Unable to load this order right now.",
+  );
+
   if (orderQuery.isLoading) {
     return (
       <div className="container mx-auto space-y-4 px-4 py-8">
@@ -50,7 +56,7 @@ export default function SellerOrdersDetailPage() {
         <Card className="border-destructive/30">
           <CardHeader>
             <CardTitle>Seller order detail not available</CardTitle>
-            <CardDescription>Unable to load this order right now.</CardDescription>
+            <CardDescription>{orderLoadErrorMessage}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             <Button asChild variant="outline">

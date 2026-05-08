@@ -6,6 +6,7 @@ import { Link, useParams } from "react-router";
 
 import type { Notification } from "~/modules/order/domain/entities/notification";
 import { getOrderUseCases } from "~/modules/order/infrastructure";
+import { getOrderUiErrorMessage } from "~/modules/order/presentation/error-message";
 import { Badge } from "~/shared/components/ui/badge";
 import { Button } from "~/shared/components/ui/button";
 import {
@@ -64,10 +65,12 @@ function DetailContent({
   notification,
   markReadDisabled,
   onMarkRead,
+  markReadErrorMessage,
 }: {
   notification: Notification;
   markReadDisabled: boolean;
   onMarkRead: () => void;
+  markReadErrorMessage: string | null;
 }) {
   const metadataRows = Object.entries(notification.metadata ?? {});
   const isUnread = !notification.readAt;
@@ -93,6 +96,11 @@ function DetailContent({
           </Button>
         </div>
       </header>
+      {markReadErrorMessage ? (
+        <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {markReadErrorMessage}
+        </p>
+      ) : null}
 
       <Card>
         <CardHeader>
@@ -197,6 +205,17 @@ export default function NotificationsDetailPage() {
     },
   });
 
+  const notificationLoadErrorMessage = getOrderUiErrorMessage(
+    notificationQuery.error,
+    "We could not load this notification from `/notifications/:notificationId`.",
+  );
+  const markReadErrorMessage = markAsReadMutation.isError
+    ? getOrderUiErrorMessage(
+        markAsReadMutation.error,
+        "Unable to mark this notification as read.",
+      )
+    : null;
+
   if (notificationQuery.isLoading) {
     return <LoadingState />;
   }
@@ -207,9 +226,7 @@ export default function NotificationsDetailPage() {
         <Card className="border-destructive/30">
           <CardHeader>
             <CardTitle>Notification detail not available</CardTitle>
-            <CardDescription>
-              We could not load this notification from `/notifications/:notificationId`.
-            </CardDescription>
+            <CardDescription>{notificationLoadErrorMessage}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
             <Button asChild variant="outline">
@@ -229,6 +246,7 @@ export default function NotificationsDetailPage() {
       notification={notificationQuery.data}
       markReadDisabled={!notificationQuery.data.readAt ? markAsReadMutation.isPending : true}
       onMarkRead={() => markAsReadMutation.mutate()}
+      markReadErrorMessage={markReadErrorMessage}
     />
   );
 }

@@ -6,6 +6,7 @@ import { Link } from "react-router";
 
 import type { Order, OrderStage } from "~/modules/order/domain/entities/order";
 import { getOrderUseCases } from "~/modules/order/infrastructure";
+import { getOrderUiErrorMessage } from "~/modules/order/presentation/error-message";
 import { Badge } from "~/shared/components/ui/badge";
 import { Button } from "~/shared/components/ui/button";
 import {
@@ -50,6 +51,11 @@ export default function SellerOrdersPage() {
         stage: selectedStage === "all" ? undefined : selectedStage,
       }),
   });
+
+  const ordersLoadErrorMessage = getOrderUiErrorMessage(
+    ordersQuery.error,
+    "Unable to load seller orders right now.",
+  );
 
   const orders = ordersQuery.data ?? [];
 
@@ -110,7 +116,7 @@ export default function SellerOrdersPage() {
               {ordersQuery.isError ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-sm text-destructive">
-                    Unable to load seller orders right now.
+                    {ordersLoadErrorMessage}
                   </TableCell>
                 </TableRow>
               ) : null}

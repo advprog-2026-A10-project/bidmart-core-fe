@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { getOrderUseCases } from "~/modules/order/infrastructure";
+import { getOrderUiErrorMessage } from "~/modules/order/presentation/error-message";
 import { Badge } from "~/shared/components/ui/badge";
 import { Button } from "~/shared/components/ui/button";
 import {
@@ -49,6 +50,15 @@ export default function OrdersConfirmPage() {
     },
   });
 
+  const orderLoadErrorMessage = getOrderUiErrorMessage(
+    orderQuery.error,
+    "We could not load this order for confirmation.",
+  );
+  const confirmErrorMessage = getOrderUiErrorMessage(
+    confirmMutation.error,
+    "Failed to confirm this order. Please retry.",
+  );
+
   if (orderQuery.isLoading) {
     return (
       <div className="container mx-auto space-y-4 px-4 py-8">
@@ -64,7 +74,7 @@ export default function OrdersConfirmPage() {
         <Card className="border-destructive/30">
           <CardHeader>
             <CardTitle>Order not found</CardTitle>
-            <CardDescription>We could not load this order for confirmation.</CardDescription>
+            <CardDescription>{orderLoadErrorMessage}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             <Button asChild variant="outline">
@@ -122,7 +132,7 @@ export default function OrdersConfirmPage() {
 
           {confirmMutation.isError ? (
             <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              Failed to confirm this order. Please retry.
+              {confirmErrorMessage}
             </p>
           ) : null}
 
