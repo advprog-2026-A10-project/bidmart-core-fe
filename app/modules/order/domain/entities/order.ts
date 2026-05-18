@@ -1,21 +1,34 @@
 /**
  * Order — Domain Entity
  *
- * Pure TypeScript type with no framework or infrastructure dependencies (DIP, SRP).
+ * Represents the lifecycle metadata used by the presentation layer.
  */
 export type Order = {
   readonly id: OrderId;
-  // TODO: add domain fields here
+  readonly lot: string;
+  readonly stage: OrderStage;
+  readonly status: OrderStatus;
+  readonly buyerId: string;
+  readonly sellerId: string;
+  readonly total: string;
+  readonly currency: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+  readonly tags: string[];
+  readonly lastActivity: string;
 };
 
-/**
- * OrderId — branded string type enforcing type safety at boundaries.
- */
+export type OrderStage = "active" | "processing" | "completed" | "cancelled";
+export type OrderStatus =
+  | "Awaiting Payment"
+  | "In Transit"
+  | "Needs Confirmation"
+  | "Delivered"
+  | "Dispute Closed"
+  | "Dispute Alert";
+
 export type OrderId = string & { readonly __brand: "OrderId" };
 
-/**
- * Factory for creating a validated OrderId value object.
- */
 export function createOrderId(value: string): OrderId {
   if (!value || value.trim().length === 0) {
     throw new Error("OrderId cannot be empty.");
@@ -23,18 +36,50 @@ export function createOrderId(value: string): OrderId {
   return value as OrderId;
 }
 
-/**
- * Factory for creating a Order entity with validation.
- */
 export function createOrder(params: {
   id: string;
-  // TODO: add entity params here
+  lot: string;
+  stage: OrderStage;
+  status: OrderStatus;
+  buyerId: string;
+  sellerId: string;
+  total: string;
+  currency: string;
+  createdAt: string;
+  updatedAt: string;
+  tags?: string[];
+  lastActivity: string;
 }): Order {
-  if (!params.id || params.id.trim().length === 0) {
-    throw new Error("Order id cannot be empty.");
+  const missing = [
+    "id",
+    "lot",
+    "stage",
+    "status",
+    "buyerId",
+    "sellerId",
+    "total",
+    "currency",
+    "createdAt",
+    "updatedAt",
+    "lastActivity",
+  ].filter((key) => !params[key as keyof typeof params]);
+
+  if (missing.length) {
+    throw new Error(`Order is missing required fields: ${missing.join(", ")}`);
   }
+
   return {
     id: createOrderId(params.id),
-    // TODO: map remaining fields
+    lot: params.lot,
+    stage: params.stage,
+    status: params.status,
+    buyerId: params.buyerId,
+    sellerId: params.sellerId,
+    total: params.total,
+    currency: params.currency,
+    createdAt: params.createdAt,
+    updatedAt: params.updatedAt,
+    tags: params.tags ?? [],
+    lastActivity: params.lastActivity,
   };
 }
