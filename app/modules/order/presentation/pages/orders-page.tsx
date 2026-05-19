@@ -49,7 +49,6 @@ const stageFilters = [
 
 type OrderStage = (typeof stageFilters)[number]["value"];
 
-const CURRENT_USER_ID = "buyer-vel";
 const QUERY_KEY_ORDERS = "orders-page-orders";
 const QUERY_KEY_NOTIFICATIONS = "orders-page-notifications";
 
@@ -63,6 +62,15 @@ const badgeVariantByStatus: Record<string, "default" | "secondary" | "outline" |
 };
 
 const notificationToneVariant: Record<Notification["type"], "default" | "secondary" | "outline" | "destructive" | "ghost"> = {
+  BID_OUTBID: "secondary",
+  AUCTION_WON: "default",
+  AUCTION_LOST: "outline",
+  ORDER_SHIPPED: "outline",
+  ORDER_DELIVERED: "ghost",
+  PAYMENT_RECEIVED: "default",
+  DISPUTE_OPENED: "destructive",
+  DISPUTE_RESOLVED: "ghost",
+  AUCTION_EXTENDED: "secondary",
   BidPlaced: "secondary",
   WinnerDetermined: "default",
   OrderUpdate: "outline",
@@ -84,7 +92,6 @@ export default function OrdersPage() {
     queryKey: [QUERY_KEY_ORDERS, selectedStage],
     queryFn: () =>
       useCases.listOrders.execute({
-        userId: CURRENT_USER_ID,
         role: "buyer",
         stage: selectedStage,
       }),
@@ -94,7 +101,6 @@ export default function OrdersPage() {
     queryKey: [QUERY_KEY_NOTIFICATIONS],
     queryFn: () =>
       useCases.listNotifications.execute({
-        userId: CURRENT_USER_ID,
         limit: 10,
       }),
   });

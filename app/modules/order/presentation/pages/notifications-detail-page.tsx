@@ -27,11 +27,19 @@ import {
   TableRow,
 } from "~/shared/components/ui/table";
 
-const CURRENT_USER_ID = "buyer-vel";
 const QUERY_KEY_NOTIFICATION_DETAIL = "notification-detail";
 const QUERY_KEY_NOTIFICATIONS = "notifications-page-list";
 
 const toneByType: Record<Notification["type"], "default" | "secondary" | "outline" | "destructive" | "ghost"> = {
+  BID_OUTBID: "secondary",
+  AUCTION_WON: "default",
+  AUCTION_LOST: "outline",
+  ORDER_SHIPPED: "outline",
+  ORDER_DELIVERED: "ghost",
+  PAYMENT_RECEIVED: "default",
+  DISPUTE_OPENED: "destructive",
+  DISPUTE_RESOLVED: "ghost",
+  AUCTION_EXTENDED: "secondary",
   BidPlaced: "secondary",
   WinnerDetermined: "default",
   OrderUpdate: "outline",
@@ -195,7 +203,6 @@ export default function NotificationsDetailPage() {
     mutationFn: () =>
       useCases.markNotificationRead.execute({
         notificationId,
-        actorId: CURRENT_USER_ID,
       }),
     onSuccess: async () => {
       await Promise.all([

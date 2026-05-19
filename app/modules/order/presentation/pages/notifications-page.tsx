@@ -29,10 +29,18 @@ import {
   TableRow,
 } from "~/shared/components/ui/table";
 
-const CURRENT_USER_ID = "buyer-vel";
 const QUERY_KEY_NOTIFICATIONS = "notifications-page-list";
 
 const toneByType: Record<Notification["type"], "default" | "secondary" | "outline" | "destructive" | "ghost"> = {
+  BID_OUTBID: "secondary",
+  AUCTION_WON: "default",
+  AUCTION_LOST: "outline",
+  ORDER_SHIPPED: "outline",
+  ORDER_DELIVERED: "ghost",
+  PAYMENT_RECEIVED: "default",
+  DISPUTE_OPENED: "destructive",
+  DISPUTE_RESOLVED: "ghost",
+  AUCTION_EXTENDED: "secondary",
   BidPlaced: "secondary",
   WinnerDetermined: "default",
   OrderUpdate: "outline",
@@ -61,7 +69,6 @@ export default function NotificationsPage() {
     queryKey: [QUERY_KEY_NOTIFICATIONS, unreadOnly],
     queryFn: () =>
       useCases.listNotifications.execute({
-        userId: CURRENT_USER_ID,
         limit: 20,
         unreadOnly,
       }),
@@ -71,7 +78,6 @@ export default function NotificationsPage() {
     mutationFn: (notificationId: string) =>
       useCases.markNotificationRead.execute({
         notificationId,
-        actorId: CURRENT_USER_ID,
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [QUERY_KEY_NOTIFICATIONS] });
@@ -148,7 +154,7 @@ export default function NotificationsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Notification list</CardTitle>
-          <CardDescription>Source: `/notifications` for `buyer-vel`.</CardDescription>
+          <CardDescription>Source: `/notifications` scoped by active auth session.</CardDescription>
         </CardHeader>
         <CardContent className="px-0">
           <Table>

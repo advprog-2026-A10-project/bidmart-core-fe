@@ -9,7 +9,7 @@ export class OrderApiRepository implements IOrderRepository {
   private readonly sellerBasePath = "/seller/orders";
 
   async listOrders(params: {
-    id: string;
+    id?: string;
     role: "buyer" | "seller";
     stage?: string;
     limit?: number;
@@ -32,11 +32,13 @@ export class OrderApiRepository implements IOrderRepository {
     return OrderApiMapper.toDomain(raw);
   }
 
-  async confirmOrder(params: { orderId: string; actorId: string }): Promise<void> {
-    await apiClient.post(`${this.basePath}/${params.orderId}/confirm`, { actor_id: params.actorId });
+  async confirmOrder(params: { orderId: string; actorId?: string }): Promise<void> {
+    await apiClient.post(`${this.basePath}/${params.orderId}/confirm`, {
+      actor_id: params.actorId,
+    });
   }
 
-  async createDispute(params: { orderId: string; reporterId: string; reason: string; details?: string }): Promise<void> {
+  async createDispute(params: { orderId: string; reporterId?: string; reason: string; details?: string }): Promise<void> {
     await apiClient.post(`${this.basePath}/${params.orderId}/dispute/new`, {
       reporter_id: params.reporterId,
       reason: params.reason,

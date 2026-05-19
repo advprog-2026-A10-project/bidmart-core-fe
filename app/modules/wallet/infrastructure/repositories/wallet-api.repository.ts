@@ -1,24 +1,70 @@
-import { apiClient } from "~/shared/infrastructure/http/api-client";
-import type { Wallet } from "~/modules/wallet/domain/entities/wallet";
+import type {
+  GetWalletTransactionByIdDTO,
+  ListWalletTransactionsDTO,
+  TopupWalletDTO,
+  WithdrawWalletDTO,
+} from "~/modules/wallet/application/dtos/wallet.dto";
+import type {
+  WalletBalance,
+  WalletTopupResult,
+  WalletTransaction,
+  WalletTransactionPage,
+  WalletWithdrawResult,
+} from "~/modules/wallet/domain/entities/wallet";
 import type { IWalletRepository } from "~/modules/wallet/domain/repositories/wallet-repository.interface";
-import { walletApiSchema } from "../api/schemas";
+import { apiClient } from "~/shared/infrastructure/http/api-client";
 import { WalletApiMapper } from "../api/wallet-api.mapper";
+import {
+  walletBalanceApiSchema,
+  walletTopupApiSchema,
+  walletTransactionApiSchema,
+  walletTransactionPageApiSchema,
+  walletWithdrawApiSchema,
+} from "../api/schemas";
 
-/**
- * WalletApiRepository — concrete implementation of IWalletRepository.
- *
- * LSP: fully substitutable for IWalletRepository everywhere it is used.
- * OCP: new data sources extend IWalletRepository without modifying use-cases.
- *
- * All responses are validated against Zod schemas at this boundary (fail-fast).
- */
 export class WalletApiRepository implements IWalletRepository {
-  private readonly basePath = "/wallets"; // TODO: update base path
+  async getBalance(): Promise<WalletBalance> {
+    const raw = await apiClient.get<unknown>("/wallet");
+    const validated = walletBalanceApiSchema.parse(raw);
+    return WalletApiMapper.toBalance(validated);
+  }
 
-  // TODO: implement interface methods, e.g.:
-  // async getById(params: { id: string }): Promise<Wallet> {
-  //   const raw = await apiClient.get<unknown>(`${this.basePath}/${params.id}`);
-  //   const validated = walletApiSchema.parse(raw);
-  //   return WalletApiMapper.toDomain(validated);
-  // }
+  async topup(params: TopupWalletDTO): Promise<WalletTopupResult> {
+    const raw = await apiClient.post<unknown>("/wallet/topup", {
+      amountCents: params.amountCents,
+      method: params.method,
+    });
+    const validated = walletTopupApiSchema.parse(raw);
+    return WalletApiMapper.toTopupResult(validated);
+  }
+
+  async withdraw(params: WithdrawWalletDTO): Promise<WalletWithdrawResult> {
+    const raw = await apiClient.post<unknown>("/wallet/withdraw", {
+      amountCents: params.amountCents,
+      bankAccount: {
+        bank: params.bankAccount.bank,
+        accountNo: params.bankAccount.accountNo,
+        name: params.bankAccount.name,
+      },
+    });
+    const validated = walletWithdrawApiSchema.parse(raw);
+    return WalletApiMapper.toWithdrawResult(validated);
+  }
+
+  async listTransactions(params: ListWalletTransactionsDTO): Promise<WalletTransactionPage> {
+    const raw = await apiClient.get<unknown>("/wallet/transactions", {
+      params: {
+        page: params.page,
+        pageSize: params.pageSize,
+      },
+    });
+    const validated = walletTransactionPageApiSchema.parse(raw);
+    return WalletApiMapper.toTransactionPage(validated);
+  }
+
+  async getTransactionById(params: GetWalletTransactionByIdDTO): Promise<WalletTransaction> {
+    const raw = await apiClient.get<unknown>(`/wallet/transactions/${params.transactionId}`);
+    const validated = walletTransactionApiSchema.parse(raw);
+    return WalletApiMapper.toTransaction(validated);
+  }
 }

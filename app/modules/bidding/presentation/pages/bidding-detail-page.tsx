@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Link, useParams } from "react-router";
 
+import { apiClient } from "~/shared/infrastructure/http/api-client";
 import { Badge } from "~/shared/components/ui/badge";
 import { Button } from "~/shared/components/ui/button";
 import {
@@ -34,7 +35,6 @@ import {
 } from "~/shared/components/ui/table";
 import {
   type AuctionStatus,
-  BIDDING_MOCK_PAYLOADS,
   type BidActivityType,
   type BidDetail,
   type MyBidStatus,
@@ -42,9 +42,58 @@ import {
 
 const BID_DETAIL_QUERY_KEY = "bid-detail";
 
-function delay(ms: number) {
-  return new Promise((resolve) => globalThis.setTimeout(resolve, ms));
-}
+type AuctionDetailApiResponse = {
+  id: string;
+  listingId: string;
+  sellerId: string;
+  sellerName: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  startPrice: number;
+  currentPrice: number;
+  reservePrice: number | null;
+  bidIncrement: number;
+  bidCount: number;
+  status: string;
+  winnerId: string | null;
+  winnerName: string | null;
+  startsAt: string;
+  endsAt: string;
+  originalEndsAt: string;
+  extensionCount: number;
+  createdAt: string;
+  highestBidderAlias?: string | null;
+};
+
+type MyBidTimelineApiResponse = {
+  at: string;
+  type: string;
+  amount: number | null;
+  note: string;
+};
+
+type MyBidDetailApiResponse = {
+  auction: AuctionDetailApiResponse;
+  myLatestBid: number;
+  myBidStatus: string;
+  winningGap: number;
+  isReserveMet: boolean;
+  placedBidCount: number;
+  timeline: MyBidTimelineApiResponse[];
+};
+
+type AuctionHistoryApiEntry = {
+  id: string;
+  bidderName: string;
+  amount: number;
+  acceptedAt: string;
+  isMyBid: boolean;
+};
+
+type AuctionHistoryApiResponse = {
+  bids: AuctionHistoryApiEntry[];
+};
 
 function formatCurrency(value: number | null) {
   if (value === null) {
@@ -150,6 +199,33 @@ function getMyStatusBadgeClasses(status: MyBidStatus) {
   }
 }
 
+function toAuctionStatus(status: string): AuctionStatus {
+  switch (status) {
+    case "DRAFT":
+    case "SCHEDULED":
+    case "ACTIVE":
+    case "EXTENDED":
+    case "CLOSED":
+    case "WON":
+    case "UNSOLD":
+      return status;
+    default:
+      return "CLOSED";
+  }
+}
+
+function toMyBidStatus(status: string): MyBidStatus {
+  switch (status) {
+    case "WINNING":
+    case "OUTBID":
+    case "WON":
+    case "LOST":
+      return status;
+    default:
+      return "LOST";
+  }
+}
+
 function getActivityTypeLabel(type: BidActivityType) {
   switch (type) {
     case "PLACED_BID":
@@ -193,14 +269,126 @@ function getOutcomeCopy(detail: BidDetail) {
   return "Your bid did not finish on top.";
 }
 
-function getBidDetailMock(auctionId: string) {
-  const record = BIDDING_MOCK_PAYLOADS.getBidDetail.byAuctionId[auctionId];
-
-  if (!record) {
-    throw new Error(`Bid detail for auction '${auctionId}' was not found in mock data.`);
+function buildSummary(status: MyBidStatus, winningGap: number): { headline: string; body: string } {
+  switch (status) {
+    case "WINNING":
+      return {
+        headline: "You are currently leading this auction.",
+        body: "Your latest accepted bid is currently the highest. Keep monitoring the timer in case another bidder responds.",
+      };
+    case "OUTBID":
+      return {
+        headline: "You are currently outbid.",
+        body: `Another bidder is leading. You need at least ${formatCurrency(winningGap)} more to catch up to the current highest bid.`,
+      };
+    case "WON":
+      return {
+        headline: "You won this auction.",
+        body: "The auction is closed and your bid finished as the winning bid.",
+      };
+    case "LOST":
+    default:
+      return {
+        headline: "You did not win this auction.",
+        body: "The auction has ended and another bidder finished on top.",
+      };
   }
+}
 
-  return { detail: record };
+function mapDetailApiToView(
+  raw: MyBidDetailApiResponse,
+  history: AuctionHistoryApiResponse,
+): { detail: BidDetail } {
+  const myBidStatus = toMyBidStatus(raw.myBidStatus);
+  const auctionStatus = toAuctionStatus(raw.auction.status);
+  const historyPreview = history.bids.slice(0, 5).map((entry) => ({
+    id: entry.id,
+    bidderAlias: entry.bidderName,
+    amount: entry.amount,
+    acceptedAt: entry.acceptedAt,
+    isMyBid: entry.isMyBid,
+  }));
+
+  const timelineAmounts = raw.timeline
+    .map((entry) => entry.amount)
+    .filter((amount): amount is number => typeof amount === "number");
+  const myHighestBid = timelineAmounts.length > 0 ? Math.max(...timelineAmounts) : raw.myLatestBid;
+  const myLastBidAt =
+    raw.timeline.find((entry) => typeof entry.amount === "number")?.at ?? raw.auction.createdAt;
+
+  const activities = raw.timeline.map((entry, index) => ({
+    id: `activity-${index}`,
+    type: sanitizeActivityType(entry.type),
+    actorId: entry.type === "OUTBID" ? null : "me",
+    actorName: entry.type === "OUTBID" ? "System" : "You",
+    amount: entry.amount,
+    at: entry.at,
+    note: entry.note,
+    isMyAction: entry.type !== "OUTBID",
+  }));
+
+  const minimumNextBid =
+    auctionStatus === "ACTIVE" || auctionStatus === "EXTENDED"
+      ? raw.auction.currentPrice + raw.auction.bidIncrement
+      : null;
+
+  return {
+    detail: {
+      auction: {
+        id: raw.auction.id,
+        listingId: raw.auction.listingId,
+        sellerId: raw.auction.sellerId,
+        sellerName: raw.auction.sellerName,
+        title: raw.auction.title,
+        description: raw.auction.description,
+        imageUrl:
+          raw.auction.imageUrl ||
+          "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=80",
+        startPrice: raw.auction.startPrice,
+        currentPrice: raw.auction.currentPrice,
+        reservePrice: raw.auction.reservePrice,
+        bidIncrement: raw.auction.bidIncrement,
+        bidCount: raw.auction.bidCount,
+        status: auctionStatus,
+        winnerId: raw.auction.winnerId,
+        winnerName: raw.auction.winnerName,
+        startsAt: raw.auction.startsAt,
+        endsAt: raw.auction.endsAt,
+        originalEndsAt: raw.auction.originalEndsAt,
+        extensionCount: raw.auction.extensionCount,
+        createdAt: raw.auction.createdAt,
+        currency: "IDR",
+        highestBidderAlias: raw.auction.highestBidderAlias ?? "No bids yet",
+      },
+      myBidStatus,
+      myLatestBid: raw.myLatestBid,
+      myHighestBid,
+      myBidCount: raw.placedBidCount,
+      myLastBidAt,
+      myRank: null,
+      isReserveMet: raw.isReserveMet,
+      minimumNextBid,
+      canBidAgain: auctionStatus === "ACTIVE" || auctionStatus === "EXTENDED",
+      winningGap: raw.winningGap,
+      summary: buildSummary(myBidStatus, raw.winningGap),
+      historyPreview,
+      activities,
+    },
+  };
+}
+
+function sanitizeActivityType(type: string): BidActivityType {
+  switch (type) {
+    case "PLACED_BID":
+    case "OUTBID":
+    case "LEADING":
+    case "EXTENDED":
+    case "CLOSED":
+    case "RESULT_CONFIRMED":
+      return type;
+    default:
+      return "PLACED_BID";
+  }
 }
 
 function SummaryMetric({ label, value, helper }: { label: string; value: string; helper: string }) {
@@ -239,8 +427,11 @@ export default function BiddingDetailPage() {
   const bidDetailQuery = useQuery({
     queryKey: [BID_DETAIL_QUERY_KEY, auctionId],
     queryFn: async () => {
-      await delay(250);
-      return getBidDetailMock(auctionId);
+      const [rawDetail, rawHistory] = await Promise.all([
+        apiClient.get<MyBidDetailApiResponse>(`/me/bids/${auctionId}`),
+        apiClient.get<AuctionHistoryApiResponse>(`/auctions/${auctionId}/history`),
+      ]);
+      return mapDetailApiToView(rawDetail, rawHistory);
     },
     enabled: Boolean(auctionId),
     staleTime: 60_000,
@@ -257,7 +448,7 @@ export default function BiddingDetailPage() {
           <CardHeader>
             <CardTitle>Bid detail not available</CardTitle>
             <CardDescription>
-              We could not load the bid detail for this auction from the current mock source.
+              We could not load the bid detail for this auction right now.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
@@ -631,8 +822,8 @@ export default function BiddingDetailPage() {
             Backend handoff note
           </CardTitle>
           <CardDescription>
-            This page already uses TanStack Query with a route-param query key and a schema-shaped
-            mock contract, so swapping in a real repository later should be straightforward.
+            This page now reads backend bid-detail and auction-history endpoints using a route-param
+            query key.
           </CardDescription>
         </CardHeader>
       </Card>

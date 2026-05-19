@@ -27,7 +27,6 @@ import {
 } from "~/shared/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "~/shared/components/ui/tabs";
 
-const CURRENT_SELLER_ID = "seller-adr";
 const QUERY_KEY_SELLER_ORDERS = "seller-orders-page-orders";
 
 const stageFilters: Array<{ value: "all" | OrderStage; label: string }> = [
@@ -46,7 +45,6 @@ export default function SellerOrdersPage() {
     queryKey: [QUERY_KEY_SELLER_ORDERS, selectedStage],
     queryFn: () =>
       useCases.listOrders.execute({
-        userId: CURRENT_SELLER_ID,
         role: "seller",
         stage: selectedStage === "all" ? undefined : selectedStage,
       }),

@@ -22,7 +22,20 @@ export type Notification = {
 export type NotificationId = string & { readonly __brand: "NotificationId" };
 
 export type NotificationChannel = "email" | "push" | "inbox";
-export type NotificationType = "BidPlaced" | "WinnerDetermined" | "OrderUpdate" | "System";
+export type NotificationType =
+  | "BID_OUTBID"
+  | "AUCTION_WON"
+  | "AUCTION_LOST"
+  | "ORDER_SHIPPED"
+  | "ORDER_DELIVERED"
+  | "PAYMENT_RECEIVED"
+  | "DISPUTE_OPENED"
+  | "DISPUTE_RESOLVED"
+  | "AUCTION_EXTENDED"
+  | "BidPlaced"
+  | "WinnerDetermined"
+  | "OrderUpdate"
+  | "System";
 
 export function createNotificationId(value: string): NotificationId {
   if (!value || value.trim().length === 0) {

@@ -1,40 +1,38 @@
-/**
- * Wallet — Domain Entity
- *
- * Pure TypeScript type with no framework or infrastructure dependencies (DIP, SRP).
- */
-export type Wallet = {
-  readonly id: WalletId;
-  // TODO: add domain fields here
+export type WalletBalance = {
+  readonly availableCents: number;
+  readonly heldCents: number;
+  readonly currency: string;
 };
 
-/**
- * WalletId — branded string type enforcing type safety at boundaries.
- */
-export type WalletId = string & { readonly __brand: "WalletId" };
+export type WalletTransactionReference = {
+  readonly type: string;
+  readonly id: string;
+};
 
-/**
- * Factory for creating a validated WalletId value object.
- */
-export function createWalletId(value: string): WalletId {
-  if (!value || value.trim().length === 0) {
-    throw new Error("WalletId cannot be empty.");
-  }
-  return value as WalletId;
-}
+export type WalletTransaction = {
+  readonly txId: string;
+  readonly type: string;
+  readonly status: string;
+  readonly amountCents: number;
+  readonly balanceAfterCents: number;
+  readonly createdAt: string | null;
+  readonly refInfo?: WalletTransactionReference;
+};
 
-/**
- * Factory for creating a Wallet entity with validation.
- */
-export function createWallet(params: {
-  id: string;
-  // TODO: add entity params here
-}): Wallet {
-  if (!params.id || params.id.trim().length === 0) {
-    throw new Error("Wallet id cannot be empty.");
-  }
-  return {
-    id: createWalletId(params.id),
-    // TODO: map remaining fields
-  };
-}
+export type WalletTransactionPage = {
+  readonly data: WalletTransaction[];
+  readonly page: number;
+  readonly pageSize: number;
+  readonly total: number;
+};
+
+export type WalletTopupResult = {
+  readonly topupId: string;
+  readonly status: string;
+  readonly newAvailableCents: number;
+};
+
+export type WalletWithdrawResult = {
+  readonly withdrawId: string;
+  readonly status: string;
+};

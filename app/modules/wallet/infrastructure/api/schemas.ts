@@ -1,15 +1,47 @@
 import { z } from "zod";
 
-/**
- * Zod schemas for validating raw API responses at the infrastructure boundary.
- * All API responses are validated here — never in use-cases or domain (DIP).
- */
-
-export const walletApiSchema = z.object({
-  id: z.string(),
-  // TODO: add API response fields here
+export const walletBalanceApiSchema = z.object({
+  availableCents: z.number().int(),
+  heldCents: z.number().int(),
+  currency: z.string(),
 });
 
-// TODO: add additional response schemas as needed
+export const walletTopupApiSchema = z.object({
+  topupId: z.string().uuid(),
+  status: z.string(),
+  newAvailableCents: z.number().int(),
+});
 
-export type WalletApiResponse = z.infer<typeof walletApiSchema>;
+export const walletWithdrawApiSchema = z.object({
+  withdrawId: z.string().uuid(),
+  status: z.string(),
+});
+
+export const walletTransactionReferenceApiSchema = z.object({
+  type: z.string(),
+  id: z.string().uuid(),
+});
+
+export const walletTransactionApiSchema = z.object({
+  txId: z.string().uuid(),
+  type: z.string(),
+  status: z.string().default("COMPLETED"),
+  amountCents: z.number().int(),
+  balanceAfterCents: z.number().int().default(0),
+  createdAt: z.string().nullable().optional().default(null),
+  refInfo: walletTransactionReferenceApiSchema.optional(),
+  ref_info: walletTransactionReferenceApiSchema.optional(),
+});
+
+export const walletTransactionPageApiSchema = z.object({
+  data: z.array(walletTransactionApiSchema),
+  page: z.number().int().positive(),
+  pageSize: z.number().int().positive(),
+  total: z.number().int().nonnegative(),
+});
+
+export type WalletBalanceApi = z.infer<typeof walletBalanceApiSchema>;
+export type WalletTopupApi = z.infer<typeof walletTopupApiSchema>;
+export type WalletWithdrawApi = z.infer<typeof walletWithdrawApiSchema>;
+export type WalletTransactionApi = z.infer<typeof walletTransactionApiSchema>;
+export type WalletTransactionPageApi = z.infer<typeof walletTransactionPageApiSchema>;

@@ -1,40 +1,40 @@
-/**
- * Catalog — Domain Entity
- *
- * Pure TypeScript type with no framework or infrastructure dependencies (DIP, SRP).
- */
-export type Catalog = {
-  readonly id: CatalogId;
-  // TODO: add domain fields here
+export type ListingStatus = "Draft" | "Active" | "Sold" | "Cancelled" | "Expired" | string;
+
+export type CatalogListing = {
+  readonly id: string;
+  readonly sellerId: string;
+  readonly sellerName: string;
+  readonly categoryId: number | null;
+  readonly categoryName: string;
+  readonly title: string;
+  readonly description: string;
+  readonly startPrice: number;
+  readonly reservePrice: number | null;
+  readonly currentPrice: number;
+  readonly minIncrement: number;
+  readonly bidCount: number;
+  readonly status: ListingStatus;
+  readonly auctionId: string | null;
+  readonly startsAt: string;
+  readonly endsAt: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
 };
 
-/**
- * CatalogId — branded string type enforcing type safety at boundaries.
- */
-export type CatalogId = string & { readonly __brand: "CatalogId" };
+export type CatalogListingImage = {
+  readonly id: string;
+  readonly url: string;
+  readonly order: number;
+};
 
-/**
- * Factory for creating a validated CatalogId value object.
- */
-export function createCatalogId(value: string): CatalogId {
-  if (!value || value.trim().length === 0) {
-    throw new Error("CatalogId cannot be empty.");
-  }
-  return value as CatalogId;
-}
+export type CatalogListingDetail = {
+  readonly listing: CatalogListing;
+  readonly images: CatalogListingImage[];
+};
 
-/**
- * Factory for creating a Catalog entity with validation.
- */
-export function createCatalog(params: {
-  id: string;
-  // TODO: add entity params here
-}): Catalog {
-  if (!params.id || params.id.trim().length === 0) {
-    throw new Error("Catalog id cannot be empty.");
-  }
-  return {
-    id: createCatalogId(params.id),
-    // TODO: map remaining fields
-  };
-}
+export type PaginatedCatalogListings = {
+  readonly data: CatalogListing[];
+  readonly total: number;
+  readonly page: number;
+  readonly pageSize: number;
+};

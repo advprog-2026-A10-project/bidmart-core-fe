@@ -33,10 +33,24 @@ export const notificationApiSchema = z.object({
   title: z.string(),
   body: z.string(),
   channel: z.enum(["email", "push", "inbox"]),
-  type: z.enum(["BidPlaced", "WinnerDetermined", "OrderUpdate", "System"]),
+  type: z.enum([
+    "BID_OUTBID",
+    "AUCTION_WON",
+    "AUCTION_LOST",
+    "ORDER_SHIPPED",
+    "ORDER_DELIVERED",
+    "PAYMENT_RECEIVED",
+    "DISPUTE_OPENED",
+    "DISPUTE_RESOLVED",
+    "AUCTION_EXTENDED",
+    "BidPlaced",
+    "WinnerDetermined",
+    "OrderUpdate",
+    "System",
+  ]),
   createdAt: z.string(),
   readAt: z.string().nullable().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const notificationListApiSchema = z.object({

@@ -18,7 +18,6 @@ import { Label } from "~/shared/components/ui/label";
 import { Skeleton } from "~/shared/components/ui/skeleton";
 import { Textarea } from "~/shared/components/ui/textarea";
 
-const CURRENT_USER_ID = "buyer-vel";
 const QUERY_KEY_ORDER_DETAIL = "order-detail";
 
 export default function OrdersDisputePage() {
@@ -40,7 +39,6 @@ export default function OrdersDisputePage() {
     mutationFn: () =>
       useCases.createDispute.execute({
         orderId,
-        reporterId: CURRENT_USER_ID,
         reason,
         details: details.trim() || undefined,
       }),

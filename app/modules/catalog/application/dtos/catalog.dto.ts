@@ -1,9 +1,42 @@
-/**
- * Input DTOs — define the shape of data flowing into use-cases.
- * Use cases receive these from the presentation layer.
- */
+export type PaginationDTO = {
+  page?: number;
+  pageSize?: number;
+};
 
-// TODO: define input DTOs for each use-case, e.g.:
-// export type GetCatalogDTO = {
-//   id: string;
-// };
+export type BrowseCatalogDTO = PaginationDTO & {
+  q?: string;
+  categoryId?: number;
+  min?: number;
+  max?: number;
+  endBefore?: string;
+};
+
+export type BrowseCategoryPathDTO = PaginationDTO & {
+  categoryPath: string;
+};
+
+export type GetListingDetailDTO = {
+  listingId: string;
+};
+
+export type CreateSellerListingDTO = {
+  categoryId?: number | null;
+  title: string;
+  description: string;
+  imageUrls: string[];
+  startPrice: number;
+  reservePrice?: number | null;
+  minIncrement: number;
+  startsAt: string;
+  endsAt: string;
+};
+
+export type UpdateSellerListingDTO = {
+  listingId: string;
+  description?: string;
+  imageUrls?: string[];
+};
+
+export type SellerListingActionDTO = {
+  listingId: string;
+};

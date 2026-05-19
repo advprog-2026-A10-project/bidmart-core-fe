@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import {
   ArrowUpRight,
   CalendarClock,
@@ -15,6 +16,7 @@ import {
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
 
+import { apiClient } from "~/shared/infrastructure/http/api-client";
 import { Badge } from "~/shared/components/ui/badge";
 import { Button } from "~/shared/components/ui/button";
 import {
@@ -27,21 +29,100 @@ import {
 } from "~/shared/components/ui/card";
 import { Separator } from "~/shared/components/ui/separator";
 import { Skeleton } from "~/shared/components/ui/skeleton";
+import { Input } from "~/shared/components/ui/input";
+import { startAuctionRealtimeSocket } from "../../infrastructure/realtime/auction-websocket";
 import { BidForm } from "../components/bid-form";
 import { CountdownTimer } from "../components/countdown-timer";
-import { type AuctionDetail, type AuctionStatus, BIDDING_MOCK_PAYLOADS } from "./constant";
+import { type AuctionDetail, type AuctionStatus } from "./constant";
 
 type BidFormValues = {
   amount: number;
+  maxAmount?: number;
 };
 
 const AUCTION_DETAIL_QUERY_KEY = "auction-detail";
-const ANTI_SNIPING_WINDOW_MS = 2 * 60 * 1000;
-const ANTI_SNIPING_EXTENSION_MS = 2 * 60 * 1000;
+const AUCTION_PROXY_QUERY_KEY = "auction-proxy";
 
-function delay(ms: number) {
-  return new Promise((resolve) => globalThis.setTimeout(resolve, ms));
-}
+type AuctionDetailApiResponse = {
+  id: string;
+  listingId: string;
+  sellerId: string;
+  sellerName: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  startPrice: number;
+  currentPrice: number;
+  reservePrice: number | null;
+  bidIncrement: number;
+  bidCount: number;
+  status: AuctionStatus;
+  winnerId: string | null;
+  winnerName: string | null;
+  startsAt: string;
+  endsAt: string;
+  originalEndsAt: string;
+  extensionCount: number;
+  createdAt: string;
+  highestBidderAlias?: string | null;
+  myLatestBid?: number | null;
+};
+
+type PlaceBidApiResponse = {
+  bidId: string;
+  auctionId: string;
+  currentPrice: number;
+  bidCount: number;
+  endsAt: string;
+  extended: boolean;
+  extensionCount: number;
+  minimumNextBid: number;
+  autoBidApplied?: boolean;
+  effectiveWinnerId?: string;
+};
+
+type ProxyBidApiResponse = {
+  auctionId: string;
+  bidderId: string;
+  enabled: boolean;
+  maxAmount: number | null;
+  auctionStatus: string;
+  currentPrice: number;
+  minimumProxyAmount: number;
+  currentlyLeading: boolean;
+  updatedAt: string | null;
+};
+
+type DisableProxyBidApiResponse = {
+  auctionId: string;
+  bidderId: string;
+  disabled: boolean;
+};
+
+type StreamBidPlacedEvent = {
+  auctionId: string;
+  currentPrice: number;
+  bidCount: number;
+  minimumNextBid: number;
+  highestBidderAlias: string | null;
+  at: string;
+};
+
+type StreamAuctionExtendedEvent = {
+  auctionId: string;
+  endsAt: string;
+  extensionCount: number;
+  at: string;
+};
+
+type StreamFinalizedEvent = {
+  auctionId: string;
+  status: AuctionStatus;
+  winnerId: string | null;
+  winnerName: string | null;
+  finalPrice: number;
+  endedAt: string;
+};
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("id-ID", {
@@ -66,18 +147,85 @@ function truncateId(value: string) {
   return `${value.slice(0, 8)}...${value.slice(-4)}`;
 }
 
-function getAuctionDetailMock(auctionId: string): AuctionDetail {
-  const baseAuction = BIDDING_MOCK_PAYLOADS.mockAuction;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
 
-  if (!auctionId || auctionId === baseAuction.id) {
-    return { ...baseAuction };
+function extractAuctionSnapshotPayload(payload: unknown): AuctionDetailApiResponse | null {
+  if (isRecord(payload) && typeof payload.id === "string" && typeof payload.listingId === "string") {
+    return payload as AuctionDetailApiResponse;
   }
+  if (isRecord(payload) && isRecord(payload.auction)) {
+    const nested = payload.auction;
+    if (typeof nested.id === "string" && typeof nested.listingId === "string") {
+      return nested as AuctionDetailApiResponse;
+    }
+  }
+  return null;
+}
 
+function extractBidPlacedPayload(payload: unknown): StreamBidPlacedEvent | null {
+  if (
+    isRecord(payload) &&
+    typeof payload.auctionId === "string" &&
+    typeof payload.currentPrice === "number" &&
+    typeof payload.bidCount === "number"
+  ) {
+    return payload as StreamBidPlacedEvent;
+  }
+  return null;
+}
+
+function extractAuctionExtendedPayload(payload: unknown): StreamAuctionExtendedEvent | null {
+  if (
+    isRecord(payload) &&
+    typeof payload.auctionId === "string" &&
+    typeof payload.endsAt === "string" &&
+    typeof payload.extensionCount === "number"
+  ) {
+    return payload as StreamAuctionExtendedEvent;
+  }
+  return null;
+}
+
+function extractFinalizedPayload(payload: unknown): StreamFinalizedEvent | null {
+  if (
+    isRecord(payload) &&
+    typeof payload.auctionId === "string" &&
+    typeof payload.status === "string" &&
+    (typeof payload.finalPrice === "number" || payload.finalPrice === null)
+  ) {
+    return payload as StreamFinalizedEvent;
+  }
+  return null;
+}
+
+function mapAuctionApiToDomain(raw: AuctionDetailApiResponse): AuctionDetail {
   return {
-    ...baseAuction,
-    id: auctionId,
-    listingId: `listing-${auctionId}`,
-    title: `Auction Lot ${auctionId.toUpperCase()}`,
+    id: raw.id,
+    listingId: raw.listingId,
+    sellerId: raw.sellerId,
+    sellerName: raw.sellerName,
+    title: raw.title,
+    description: raw.description,
+    imageUrl: raw.imageUrl,
+    startPrice: raw.startPrice,
+    currentPrice: raw.currentPrice,
+    reservePrice: raw.reservePrice,
+    bidIncrement: raw.bidIncrement,
+    bidCount: raw.bidCount,
+    status: raw.status,
+    winnerId: raw.winnerId,
+    winnerName: raw.winnerName,
+    startsAt: raw.startsAt,
+    endsAt: raw.endsAt,
+    originalEndsAt: raw.originalEndsAt,
+    extensionCount: raw.extensionCount,
+    createdAt: raw.createdAt,
+    watchersCount: 0,
+    highestBidderAlias: raw.highestBidderAlias ?? "No bids yet",
+    myLatestBid: raw.myLatestBid ?? null,
+    currency: "IDR",
   };
 }
 
@@ -178,67 +326,156 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 export default function AuctionsDetailPage() {
   const params = useParams();
-  const auctionId = params.auctionId ?? BIDDING_MOCK_PAYLOADS.mockAuction.id;
+  const auctionId = params.auctionId ?? "";
   const queryClient = useQueryClient();
+  const [proxyMaxAmountInput, setProxyMaxAmountInput] = useState("");
 
   const auctionQuery = useQuery({
     queryKey: [AUCTION_DETAIL_QUERY_KEY, auctionId],
     queryFn: async () => {
-      await delay(350);
-      return getAuctionDetailMock(auctionId);
+      const raw = await apiClient.get<AuctionDetailApiResponse>(`/auctions/${auctionId}`);
+      return mapAuctionApiToDomain(raw);
     },
     enabled: Boolean(auctionId),
   });
 
   const placeBidMutation = useMutation({
-    mutationFn: async ({ amount, auction }: BidFormValues & { auction: AuctionDetail }) => {
-      await delay(300);
+    mutationFn: async ({ amount, maxAmount }: BidFormValues) => {
+      const body: { amount: number; maxAmount?: number } = { amount };
+      if (maxAmount !== undefined) {
+        body.maxAmount = maxAmount;
+      }
 
-      const remainingTime = new Date(auction.endsAt).getTime() - Date.now();
-      const willExtend = remainingTime <= ANTI_SNIPING_WINDOW_MS;
-
-      return {
-        amount,
-        placedAt: new Date().toISOString(),
-        willExtend,
-      };
+      return apiClient.post<PlaceBidApiResponse>(`/auctions/${auctionId}/bids`, {
+        ...body,
+      });
     },
-    onSuccess: (result) => {
-      queryClient.setQueryData<AuctionDetail | undefined>(
-        [AUCTION_DETAIL_QUERY_KEY, auctionId],
-        (currentAuction) => {
-          if (!currentAuction) {
-            return currentAuction;
-          }
-
-          const nextEndsAt = result.willExtend
-            ? new Date(
-                new Date(currentAuction.endsAt).getTime() + ANTI_SNIPING_EXTENSION_MS,
-              ).toISOString()
-            : currentAuction.endsAt;
-
-          return {
-            ...currentAuction,
-            currentPrice: result.amount,
-            myLatestBid: result.amount,
-            highestBidderAlias: "You",
-            bidCount: currentAuction.bidCount + 1,
-            endsAt: nextEndsAt,
-            extensionCount: result.willExtend
-              ? currentAuction.extensionCount + 1
-              : currentAuction.extensionCount,
-            status: result.willExtend ? "EXTENDED" : currentAuction.status,
-          } satisfies AuctionDetail;
-        },
-      );
-
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({
+        queryKey: [AUCTION_DETAIL_QUERY_KEY, auctionId],
+      });
       toast.success(
-        result.willExtend
-          ? "Bid placed. Auction extended by 2 minutes because the bid landed near closing time."
-          : "Bid placed successfully.",
+        result.autoBidApplied
+          ? "Bid placed. Proxy auto-bid settlement has been applied."
+          : result.extended
+            ? "Bid placed. Auction extended by 2 minutes because the bid landed near closing time."
+            : "Bid placed successfully.",
       );
     },
   });
+
+  const proxyQuery = useQuery({
+    queryKey: [AUCTION_PROXY_QUERY_KEY, auctionId],
+    queryFn: async () => {
+      return apiClient.get<ProxyBidApiResponse>(`/auctions/${auctionId}/proxy`);
+    },
+    enabled: Boolean(auctionId),
+  });
+
+  const upsertProxyMutation = useMutation({
+    mutationFn: async ({ maxAmount }: { maxAmount: number }) => {
+      return apiClient.put<ProxyBidApiResponse>(`/auctions/${auctionId}/proxy`, {
+        maxAmount,
+      });
+    },
+    onSuccess: async (result) => {
+      setProxyMaxAmountInput(result.maxAmount ? String(result.maxAmount) : "");
+      await queryClient.invalidateQueries({
+        queryKey: [AUCTION_PROXY_QUERY_KEY, auctionId],
+      });
+      toast.success("Proxy bidding has been updated.");
+    },
+  });
+
+  const disableProxyMutation = useMutation({
+    mutationFn: async () => {
+      return apiClient.delete<DisableProxyBidApiResponse>(`/auctions/${auctionId}/proxy`);
+    },
+    onSuccess: async (result) => {
+      setProxyMaxAmountInput("");
+      await queryClient.invalidateQueries({
+        queryKey: [AUCTION_PROXY_QUERY_KEY, auctionId],
+      });
+      toast.success(
+        result.disabled
+          ? "Proxy bidding has been disabled."
+          : "No active proxy bidding was found.",
+      );
+    },
+  });
+
+  useEffect(() => {
+    if (!proxyQuery.data) {
+      return;
+    }
+
+    if (proxyQuery.data.enabled) {
+      setProxyMaxAmountInput(proxyQuery.data.maxAmount ? String(proxyQuery.data.maxAmount) : "");
+      return;
+    }
+
+    setProxyMaxAmountInput("");
+  }, [proxyQuery.data]);
+
+  useEffect(() => {
+    if (!auctionId) {
+      return;
+    }
+
+    return startAuctionRealtimeSocket({
+      auctionId,
+      onEvent: (event) => {
+        if (event.type === "snapshot") {
+          const snapshot = extractAuctionSnapshotPayload(event.payload);
+          if (!snapshot) {
+            return;
+          }
+
+          const hasMyLatestBid = Object.prototype.hasOwnProperty.call(snapshot, "myLatestBid");
+          queryClient.setQueryData<AuctionDetail>(
+            [AUCTION_DETAIL_QUERY_KEY, auctionId],
+            (current) => {
+              const mapped = mapAuctionApiToDomain(snapshot);
+              if (!hasMyLatestBid && current) {
+                mapped.myLatestBid = current.myLatestBid;
+              }
+              return mapped;
+            },
+          );
+          return;
+        }
+
+        if (event.type === "bidPlaced") {
+          const payload = extractBidPlacedPayload(event.payload);
+          if (payload) {
+            toast(`New leading bid: ${formatCurrency(payload.currentPrice)}`);
+          }
+          return;
+        }
+
+        if (event.type === "auctionExtended") {
+          const payload = extractAuctionExtendedPayload(event.payload);
+          if (payload) {
+            toast(`Auction extended until ${formatDateTime(payload.endsAt)}`);
+          }
+          return;
+        }
+
+        if (event.type === "finalized") {
+          const payload = extractFinalizedPayload(event.payload);
+          if (!payload) {
+            return;
+          }
+
+          if (payload.status === "WON") {
+            toast.success("Auction finalized with a winning bid.");
+          } else {
+            toast("Auction finalized without a winner.");
+          }
+        }
+      },
+    });
+  }, [auctionId, queryClient]);
 
   if (auctionQuery.isLoading) {
     return <AuctionDetailSkeleton />;
@@ -264,6 +501,7 @@ export default function AuctionsDetailPage() {
   const nextMinimumBid = auction.currentPrice + auction.bidIncrement;
   const isLeading = auction.myLatestBid !== null && auction.myLatestBid === auction.currentPrice;
   const reserveMet = auction.reservePrice !== null && auction.currentPrice >= auction.reservePrice;
+  const minimumProxyAmount = proxyQuery.data?.minimumProxyAmount ?? nextMinimumBid;
 
   return (
     <div className="container mx-auto space-y-6 px-4 py-8">
@@ -430,9 +668,8 @@ export default function AuctionsDetailPage() {
                 <div>
                   <p className="text-foreground font-medium">Schema-ready auction fields</p>
                   <p>
-                    The mock payload now follows the database shape more closely: image URL, reserve
-                    price, status, original end time, and technical identifiers are all available on
-                    the page.
+                    Auction payload follows backend schema closely: image URL, reserve price, status,
+                    original end time, and technical identifiers are available on the page.
                   </p>
                 </div>
               </div>
@@ -494,7 +731,10 @@ export default function AuctionsDetailPage() {
                 minIncrement={auction.bidIncrement}
                 isSubmitting={placeBidMutation.isPending}
                 onSubmit={async (values) => {
-                  await placeBidMutation.mutateAsync({ amount: values.amount, auction });
+                  await placeBidMutation.mutateAsync({
+                    amount: values.amount,
+                    maxAmount: values.maxAmount,
+                  });
                 }}
               />
             </CardContent>
@@ -506,10 +746,101 @@ export default function AuctionsDetailPage() {
                 </Link>
               </Button>
               <p className="text-muted-foreground text-xs leading-5">
-                Mock mode only: this updates the TanStack Query cache so the screen already behaves
-                like a backend-backed auction page.
+                Bid actions are submitted to backend auction endpoints and reflected after query
+                refresh.
               </p>
             </CardFooter>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Proxy bidding</CardTitle>
+              <CardDescription>
+                Set maximum auto-bid so the system can react for you within your limit.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-muted/30 rounded-lg border p-4 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted-foreground">Status</span>
+                  <span className="font-medium">
+                    {proxyQuery.isLoading
+                      ? "Loading..."
+                      : proxyQuery.data?.enabled
+                        ? "Enabled"
+                        : "Disabled"}
+                  </span>
+                </div>
+                <Separator className="my-3" />
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted-foreground">Current proxy max</span>
+                  <span className="font-medium">
+                    {proxyQuery.data?.enabled && proxyQuery.data.maxAmount
+                      ? formatCurrency(proxyQuery.data.maxAmount)
+                      : "—"}
+                  </span>
+                </div>
+                <Separator className="my-3" />
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted-foreground">Minimum proxy max</span>
+                  <span className="font-medium">{formatCurrency(minimumProxyAmount)}</span>
+                </div>
+              </div>
+
+              <form
+                className="space-y-3"
+                onSubmit={async (event) => {
+                  event.preventDefault();
+
+                  const parsed = Number(proxyMaxAmountInput);
+                  if (!Number.isFinite(parsed) || parsed <= 0) {
+                    toast.error("Proxy max must be a positive number.");
+                    return;
+                  }
+
+                  if (parsed < minimumProxyAmount) {
+                    toast.error(
+                      `Proxy max must be at least ${formatCurrency(minimumProxyAmount)}.`,
+                    );
+                    return;
+                  }
+
+                  await upsertProxyMutation.mutateAsync({ maxAmount: parsed });
+                }}
+              >
+                <label className="text-sm font-medium" htmlFor="proxy-max-amount">
+                  Proxy max amount
+                </label>
+                <Input
+                  id="proxy-max-amount"
+                  min={minimumProxyAmount}
+                  step={auction.bidIncrement}
+                  type="number"
+                  value={proxyMaxAmountInput}
+                  onChange={(event) => setProxyMaxAmountInput(event.target.value)}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    className="flex-1"
+                    disabled={upsertProxyMutation.isPending || proxyQuery.isLoading}
+                    type="submit"
+                  >
+                    {upsertProxyMutation.isPending ? "Saving..." : "Save proxy"}
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    disabled={disableProxyMutation.isPending || proxyQuery.isLoading}
+                    type="button"
+                    variant="outline"
+                    onClick={async () => {
+                      await disableProxyMutation.mutateAsync();
+                    }}
+                  >
+                    {disableProxyMutation.isPending ? "Disabling..." : "Disable proxy"}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
           </Card>
 
           <Card>

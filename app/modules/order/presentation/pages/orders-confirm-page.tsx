@@ -17,7 +17,6 @@ import {
 } from "~/shared/components/ui/card";
 import { Skeleton } from "~/shared/components/ui/skeleton";
 
-const CURRENT_USER_ID = "buyer-vel";
 const QUERY_KEY_ORDER_DETAIL = "order-detail";
 
 function formatTimestamp(iso: string) {
@@ -43,7 +42,6 @@ export default function OrdersConfirmPage() {
     mutationFn: () =>
       useCases.confirmOrder.execute({
         orderId,
-        actorId: CURRENT_USER_ID,
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [QUERY_KEY_ORDER_DETAIL, orderId] });
