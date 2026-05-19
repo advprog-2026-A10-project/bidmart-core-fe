@@ -21,10 +21,7 @@ export function SonnerSection() {
           <Button variant="outline" onClick={() => toast.error("Something went wrong.")}>
             Error
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => toast.warning("Proceed with caution.")}
-          >
+          <Button variant="outline" onClick={() => toast.warning("Proceed with caution.")}>
             Warning
           </Button>
           <Button variant="outline" onClick={() => toast.info("Here is some information.")}>

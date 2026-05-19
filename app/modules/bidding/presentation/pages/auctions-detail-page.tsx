@@ -152,7 +152,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function extractAuctionSnapshotPayload(payload: unknown): AuctionDetailApiResponse | null {
-  if (isRecord(payload) && typeof payload.id === "string" && typeof payload.listingId === "string") {
+  if (
+    isRecord(payload) &&
+    typeof payload.id === "string" &&
+    typeof payload.listingId === "string"
+  ) {
     return payload as AuctionDetailApiResponse;
   }
   if (isRecord(payload) && isRecord(payload.auction)) {
@@ -328,7 +332,8 @@ export default function AuctionsDetailPage() {
   const params = useParams();
   const auctionId = params.auctionId ?? "";
   const queryClient = useQueryClient();
-  const [proxyMaxAmountInput, setProxyMaxAmountInput] = useState("");
+  const [proxyMaxAmountDraft, setProxyMaxAmountDraft] = useState("");
+  const [isProxyDraftDirty, setIsProxyDraftDirty] = useState(false);
 
   const auctionQuery = useQuery({
     queryKey: [AUCTION_DETAIL_QUERY_KEY, auctionId],
@@ -379,7 +384,8 @@ export default function AuctionsDetailPage() {
       });
     },
     onSuccess: async (result) => {
-      setProxyMaxAmountInput(result.maxAmount ? String(result.maxAmount) : "");
+      setProxyMaxAmountDraft(result.maxAmount ? String(result.maxAmount) : "");
+      setIsProxyDraftDirty(false);
       await queryClient.invalidateQueries({
         queryKey: [AUCTION_PROXY_QUERY_KEY, auctionId],
       });
@@ -392,30 +398,16 @@ export default function AuctionsDetailPage() {
       return apiClient.delete<DisableProxyBidApiResponse>(`/auctions/${auctionId}/proxy`);
     },
     onSuccess: async (result) => {
-      setProxyMaxAmountInput("");
+      setProxyMaxAmountDraft("");
+      setIsProxyDraftDirty(false);
       await queryClient.invalidateQueries({
         queryKey: [AUCTION_PROXY_QUERY_KEY, auctionId],
       });
       toast.success(
-        result.disabled
-          ? "Proxy bidding has been disabled."
-          : "No active proxy bidding was found.",
+        result.disabled ? "Proxy bidding has been disabled." : "No active proxy bidding was found.",
       );
     },
   });
-
-  useEffect(() => {
-    if (!proxyQuery.data) {
-      return;
-    }
-
-    if (proxyQuery.data.enabled) {
-      setProxyMaxAmountInput(proxyQuery.data.maxAmount ? String(proxyQuery.data.maxAmount) : "");
-      return;
-    }
-
-    setProxyMaxAmountInput("");
-  }, [proxyQuery.data]);
 
   useEffect(() => {
     if (!auctionId) {
@@ -502,6 +494,9 @@ export default function AuctionsDetailPage() {
   const isLeading = auction.myLatestBid !== null && auction.myLatestBid === auction.currentPrice;
   const reserveMet = auction.reservePrice !== null && auction.currentPrice >= auction.reservePrice;
   const minimumProxyAmount = proxyQuery.data?.minimumProxyAmount ?? nextMinimumBid;
+  const proxyMaxAmountFromServer =
+    proxyQuery.data?.enabled && proxyQuery.data.maxAmount ? String(proxyQuery.data.maxAmount) : "";
+  const proxyMaxAmountInput = isProxyDraftDirty ? proxyMaxAmountDraft : proxyMaxAmountFromServer;
 
   return (
     <div className="container mx-auto space-y-6 px-4 py-8">
@@ -668,8 +663,8 @@ export default function AuctionsDetailPage() {
                 <div>
                   <p className="text-foreground font-medium">Schema-ready auction fields</p>
                   <p>
-                    Auction payload follows backend schema closely: image URL, reserve price, status,
-                    original end time, and technical identifiers are available on the page.
+                    Auction payload follows backend schema closely: image URL, reserve price,
+                    status, original end time, and technical identifiers are available on the page.
                   </p>
                 </div>
               </div>
@@ -817,7 +812,10 @@ export default function AuctionsDetailPage() {
                   step={auction.bidIncrement}
                   type="number"
                   value={proxyMaxAmountInput}
-                  onChange={(event) => setProxyMaxAmountInput(event.target.value)}
+                  onChange={(event) => {
+                    setProxyMaxAmountDraft(event.target.value);
+                    setIsProxyDraftDirty(true);
+                  }}
                 />
                 <div className="flex gap-2">
                   <Button

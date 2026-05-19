@@ -82,7 +82,12 @@ export default function WalletWithdrawPage() {
                 const accountNo = String(formData.get("accountNo") ?? "").trim();
                 const name = String(formData.get("name") ?? "").trim();
 
-                if (!amountCents || bank.length === 0 || accountNo.length === 0 || name.length === 0) {
+                if (
+                  !amountCents ||
+                  bank.length === 0 ||
+                  accountNo.length === 0 ||
+                  name.length === 0
+                ) {
                   return;
                 }
 

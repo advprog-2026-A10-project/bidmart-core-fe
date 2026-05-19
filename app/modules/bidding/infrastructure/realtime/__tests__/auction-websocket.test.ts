@@ -1,9 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  startAuctionRealtimeSocket,
-  type AuctionRealtimeEvent,
-} from "../auction-websocket";
+import { startAuctionRealtimeSocket, type AuctionRealtimeEvent } from "../auction-websocket";
 
 class MockWebSocket {
   static instances: MockWebSocket[] = [];

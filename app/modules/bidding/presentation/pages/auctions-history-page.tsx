@@ -35,11 +35,7 @@ import {
 } from "~/shared/components/ui/table";
 import { startAuctionRealtimeSocket } from "../../infrastructure/realtime/auction-websocket";
 import { CountdownTimer } from "../components/countdown-timer";
-import {
-  type AuctionDetail,
-  type AuctionStatus,
-  type BidHistoryEntry,
-} from "./constant";
+import { type AuctionDetail, type AuctionStatus, type BidHistoryEntry } from "./constant";
 
 const AUCTION_HISTORY_QUERY_KEY = "auction-history";
 
@@ -135,7 +131,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function extractAuctionSnapshotPayload(payload: unknown): AuctionDetailApiResponse | null {
-  if (isRecord(payload) && typeof payload.id === "string" && typeof payload.listingId === "string") {
+  if (
+    isRecord(payload) &&
+    typeof payload.id === "string" &&
+    typeof payload.listingId === "string"
+  ) {
     return payload as AuctionDetailApiResponse;
   }
   if (isRecord(payload) && isRecord(payload.auction)) {

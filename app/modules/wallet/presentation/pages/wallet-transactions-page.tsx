@@ -147,7 +147,9 @@ export default function WalletTransactionsPage() {
                     <TableCell>{transaction.status}</TableCell>
                     <TableCell>{formatCurrency(transaction.amountCents)}</TableCell>
                     <TableCell>{formatCurrency(transaction.balanceAfterCents)}</TableCell>
-                    <TableCell className="text-xs">{formatDateTime(transaction.createdAt)}</TableCell>
+                    <TableCell className="text-xs">
+                      {formatDateTime(transaction.createdAt)}
+                    </TableCell>
                     <TableCell className="text-right">
                       <Button asChild size="sm" variant="outline">
                         <Link to={`/wallet/transactions/${transaction.txId}`}>Detail</Link>

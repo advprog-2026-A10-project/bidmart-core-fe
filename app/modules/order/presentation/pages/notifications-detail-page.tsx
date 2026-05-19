@@ -30,7 +30,10 @@ import {
 const QUERY_KEY_NOTIFICATION_DETAIL = "notification-detail";
 const QUERY_KEY_NOTIFICATIONS = "notifications-page-list";
 
-const toneByType: Record<Notification["type"], "default" | "secondary" | "outline" | "destructive" | "ghost"> = {
+const toneByType: Record<
+  Notification["type"],
+  "default" | "secondary" | "outline" | "destructive" | "ghost"
+> = {
   BID_OUTBID: "secondary",
   AUCTION_WON: "default",
   AUCTION_LOST: "outline",
@@ -46,7 +49,10 @@ const toneByType: Record<Notification["type"], "default" | "secondary" | "outlin
   System: "ghost",
 };
 
-const toneByChannel: Record<Notification["channel"], "default" | "secondary" | "outline" | "destructive" | "ghost"> = {
+const toneByChannel: Record<
+  Notification["channel"],
+  "default" | "secondary" | "outline" | "destructive" | "ghost"
+> = {
   email: "outline",
   push: "default",
   inbox: "secondary",
@@ -87,8 +93,12 @@ function DetailContent({
     <div className="container mx-auto space-y-6 px-4 py-8">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Notification Detail</p>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">{notification.title}</h1>
+          <p className="text-muted-foreground text-xs tracking-[0.3em] uppercase">
+            Notification Detail
+          </p>
+          <h1 className="text-foreground text-3xl font-bold tracking-tight">
+            {notification.title}
+          </h1>
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={toneByType[notification.type]}>{notification.type}</Badge>
             <Badge variant={toneByChannel[notification.channel]}>{notification.channel}</Badge>
@@ -105,7 +115,7 @@ function DetailContent({
         </div>
       </header>
       {markReadErrorMessage ? (
-        <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p className="border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm">
           {markReadErrorMessage}
         </p>
       ) : null}
@@ -116,24 +126,24 @@ function DetailContent({
           <CardDescription>Primary payload from `/notifications/:notificationId`.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm leading-6 text-foreground">{notification.body}</p>
+          <p className="text-foreground text-sm leading-6">{notification.body}</p>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <p className="text-xs text-muted-foreground">Created at</p>
+              <p className="text-muted-foreground text-xs">Created at</p>
               <p className="text-sm font-medium">{formatTimestamp(notification.createdAt)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Read at</p>
+              <p className="text-muted-foreground text-xs">Read at</p>
               <p className="text-sm font-medium">
                 {notification.readAt ? formatTimestamp(notification.readAt) : "Not read yet"}
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Notification id</p>
+              <p className="text-muted-foreground text-xs">Notification id</p>
               <p className="text-sm font-medium">{notification.id}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Related order</p>
+              <p className="text-muted-foreground text-xs">Related order</p>
               {notification.orderId ? (
                 <Button asChild className="px-0 text-sm" variant="link">
                   <Link to={`/orders/${notification.orderId}`}>{notification.orderId}</Link>
@@ -162,7 +172,7 @@ function DetailContent({
             <TableBody>
               {metadataRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={2} className="text-sm text-muted-foreground">
+                  <TableCell colSpan={2} className="text-muted-foreground text-sm">
                     No metadata for this notification.
                   </TableCell>
                 </TableRow>
@@ -177,7 +187,7 @@ function DetailContent({
             </TableBody>
           </Table>
         </CardContent>
-        <CardFooter className="text-xs text-muted-foreground">
+        <CardFooter className="text-muted-foreground text-xs">
           Mark-as-read action calls `PATCH /notifications/:notificationId/read`.
         </CardFooter>
       </Card>
@@ -206,7 +216,9 @@ export default function NotificationsDetailPage() {
       }),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: [QUERY_KEY_NOTIFICATION_DETAIL, notificationId] }),
+        queryClient.invalidateQueries({
+          queryKey: [QUERY_KEY_NOTIFICATION_DETAIL, notificationId],
+        }),
         queryClient.invalidateQueries({ queryKey: [QUERY_KEY_NOTIFICATIONS] }),
       ]);
     },
@@ -217,10 +229,7 @@ export default function NotificationsDetailPage() {
     "We could not load this notification from `/notifications/:notificationId`.",
   );
   const markReadErrorMessage = markAsReadMutation.isError
-    ? getOrderUiErrorMessage(
-        markAsReadMutation.error,
-        "Unable to mark this notification as read.",
-      )
+    ? getOrderUiErrorMessage(markAsReadMutation.error, "Unable to mark this notification as read.")
     : null;
 
   if (notificationQuery.isLoading) {

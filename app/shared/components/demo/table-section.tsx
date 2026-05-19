@@ -24,10 +24,7 @@ const statusVariant: Record<string, "default" | "secondary" | "destructive" | "o
 };
 
 export function TableSection() {
-  const total = invoices.reduce(
-    (sum, inv) => sum + parseFloat(inv.amount.replace("$", "")),
-    0,
-  );
+  const total = invoices.reduce((sum, inv) => sum + parseFloat(inv.amount.replace("$", "")), 0);
 
   return (
     <section className="space-y-6">

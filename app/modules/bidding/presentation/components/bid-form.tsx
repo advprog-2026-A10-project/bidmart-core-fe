@@ -35,21 +35,23 @@ export function BidForm({
 }: BidFormProps) {
   const minimumAllowed = currentBid + minIncrement;
 
-  const schema = z.object({
-    amount: z
-      .number({ message: "Masukkan nominal bid yang valid." })
-      .finite("Masukkan nominal bid yang valid.")
-      .refine((value) => value >= minimumAllowed, {
-        message: `Bid minimum adalah Rp${minimumAllowed.toLocaleString("id-ID")}.`,
-      }),
-    maxAmount: z
-      .number({ message: "Masukkan nominal proxy max yang valid." })
-      .positive("Proxy max harus lebih besar dari 0.")
-      .optional(),
-  }).refine((values) => values.maxAmount === undefined || values.maxAmount >= values.amount, {
-    message: "Proxy max harus lebih besar atau sama dengan nominal bid.",
-    path: ["maxAmount"],
-  });
+  const schema = z
+    .object({
+      amount: z
+        .number({ message: "Masukkan nominal bid yang valid." })
+        .finite("Masukkan nominal bid yang valid.")
+        .refine((value) => value >= minimumAllowed, {
+          message: `Bid minimum adalah Rp${minimumAllowed.toLocaleString("id-ID")}.`,
+        }),
+      maxAmount: z
+        .number({ message: "Masukkan nominal proxy max yang valid." })
+        .positive("Proxy max harus lebih besar dari 0.")
+        .optional(),
+    })
+    .refine((values) => values.maxAmount === undefined || values.maxAmount >= values.amount, {
+      message: "Proxy max harus lebih besar atau sama dengan nominal bid.",
+      path: ["maxAmount"],
+    });
 
   const form = useForm<BidFormValues>({
     resolver: zodResolver(schema),
@@ -115,8 +117,7 @@ export function BidForm({
                 />
               </FormControl>
               <FormDescription>
-                Jika diisi, sistem akan melakukan auto-bid sampai batas ini saat ada penawaran
-                lain.
+                Jika diisi, sistem akan melakukan auto-bid sampai batas ini saat ada penawaran lain.
               </FormDescription>
               <FormMessage />
             </FormItem>

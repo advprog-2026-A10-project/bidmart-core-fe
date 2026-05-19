@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, NavLink, useLocation } from "react-router";
 import {
   BellIcon,
@@ -65,32 +65,13 @@ function BidMartLogo() {
 }
 
 export function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileOpenPath, setMobileOpenPath] = useState<string | null>(null);
   const location = useLocation();
+  const mobileOpen = mobileOpenPath === location.pathname;
   const { name, initials, balance, notificationCount } = PLACEHOLDER_USER;
 
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [location.pathname]);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(min-width: 640px)");
-    const handleChange = (event: MediaQueryListEvent) => {
-      if (event.matches) {
-        setMobileOpen(false);
-      }
-    };
-
-    mediaQuery.addEventListener("change", handleChange);
-    if (mediaQuery.matches) {
-      setMobileOpen(false);
-    }
-
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, []);
-
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-md">
+    <header className="bg-background/95 sticky top-0 z-50 w-full border-b backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 lg:px-6">
         <BidMartLogo />
 
@@ -101,7 +82,7 @@ export function Navbar() {
               key={to}
               to={to}
               className={({ isActive }) =>
-                `relative px-3 py-1.5 text-sm font-medium rounded-md transition-colors duration-150 ${
+                `relative rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
                   isActive
                     ? "text-primary bg-primary/8"
                     : "text-muted-foreground hover:text-foreground hover:bg-accent"
@@ -139,13 +120,13 @@ export function Navbar() {
           {/* User dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="ml-1 flex items-center gap-2 rounded-full outline-none ring-offset-background transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <button className="ring-offset-background focus-visible:ring-ring ml-1 flex items-center gap-2 rounded-full transition-opacity outline-none hover:opacity-80 focus-visible:ring-2 focus-visible:ring-offset-2">
                 <Avatar size="sm">
                   <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
-                <ChevronDownIcon className="hidden size-3.5 text-muted-foreground sm:block" />
+                <ChevronDownIcon className="text-muted-foreground hidden size-3.5 sm:block" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -207,7 +188,11 @@ export function Navbar() {
             variant="ghost"
             size="icon"
             className="ml-1 sm:hidden"
-            onClick={() => setMobileOpen((v) => !v)}
+            onClick={() =>
+              setMobileOpenPath((openPath) =>
+                openPath === location.pathname ? null : location.pathname,
+              )
+            }
             aria-label="Toggle menu"
           >
             {mobileOpen ? <XIcon className="size-5" /> : <MenuIcon className="size-5" />}
@@ -217,13 +202,13 @@ export function Navbar() {
 
       {/* Mobile nav panel */}
       {mobileOpen && (
-        <div className="absolute inset-x-0 top-full z-40 border-t bg-background px-4 pb-4 pt-2 shadow-lg sm:hidden">
+        <div className="bg-background absolute inset-x-0 top-full z-40 border-t px-4 pt-2 pb-4 shadow-lg sm:hidden">
           <nav className="flex flex-col gap-0.5">
             {mobileNav.map(({ label, to, icon: Icon }) => (
               <NavLink
                 key={to}
                 to={to}
-                onClick={() => setMobileOpen(false)}
+                onClick={() => setMobileOpenPath(null)}
                 className={({ isActive }) =>
                   `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
                     isActive
@@ -243,7 +228,11 @@ export function Navbar() {
               <p className="text-sm font-semibold">{name}</p>
               <p className="text-muted-foreground text-xs">${balance} in wallet</p>
             </div>
-            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive gap-2"
+            >
               <LogOutIcon className="size-4" />
               Sign Out
             </Button>

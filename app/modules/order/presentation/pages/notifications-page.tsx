@@ -31,7 +31,10 @@ import {
 
 const QUERY_KEY_NOTIFICATIONS = "notifications-page-list";
 
-const toneByType: Record<Notification["type"], "default" | "secondary" | "outline" | "destructive" | "ghost"> = {
+const toneByType: Record<
+  Notification["type"],
+  "default" | "secondary" | "outline" | "destructive" | "ghost"
+> = {
   BID_OUTBID: "secondary",
   AUCTION_WON: "default",
   AUCTION_LOST: "outline",
@@ -47,7 +50,10 @@ const toneByType: Record<Notification["type"], "default" | "secondary" | "outlin
   System: "ghost",
 };
 
-const toneByChannel: Record<Notification["channel"], "default" | "secondary" | "outline" | "destructive" | "ghost"> = {
+const toneByChannel: Record<
+  Notification["channel"],
+  "default" | "secondary" | "outline" | "destructive" | "ghost"
+> = {
   email: "outline",
   push: "default",
   inbox: "secondary",
@@ -100,14 +106,14 @@ export default function NotificationsPage() {
     <div className="container mx-auto space-y-6 px-4 py-8">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Inbox</p>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Notifications</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-xs tracking-[0.4em] uppercase">Inbox</p>
+          <h1 className="text-foreground text-3xl font-bold tracking-tight">Notifications</h1>
+          <p className="text-muted-foreground text-sm">
             Review order and bidding events from the `/notifications` endpoint.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Label htmlFor="unread-only-filter" className="text-sm text-muted-foreground">
+          <Label htmlFor="unread-only-filter" className="text-muted-foreground text-sm">
             <Checkbox
               id="unread-only-filter"
               checked={unreadOnly}
@@ -182,15 +188,17 @@ export default function NotificationsPage() {
 
               {notificationsQuery.isError ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-sm text-destructive">
+                  <TableCell colSpan={6} className="text-destructive text-sm">
                     {notificationsLoadErrorMessage}
                   </TableCell>
                 </TableRow>
               ) : null}
 
-              {!notificationsQuery.isLoading && !notificationsQuery.isError && notifications.length === 0 ? (
+              {!notificationsQuery.isLoading &&
+              !notificationsQuery.isError &&
+              notifications.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-sm text-muted-foreground">
+                  <TableCell colSpan={6} className="text-muted-foreground text-sm">
                     No notifications found for this filter.
                   </TableCell>
                 </TableRow>
@@ -201,20 +209,24 @@ export default function NotificationsPage() {
                 return (
                   <TableRow key={notification.id}>
                     <TableCell className="space-y-1">
-                      <p className="text-sm font-semibold text-foreground">{notification.title}</p>
-                      <p className="text-xs text-muted-foreground">{notification.body}</p>
+                      <p className="text-foreground text-sm font-semibold">{notification.title}</p>
+                      <p className="text-muted-foreground text-xs">{notification.body}</p>
                     </TableCell>
                     <TableCell>
                       <Badge variant={toneByType[notification.type]}>{notification.type}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={toneByChannel[notification.channel]}>{notification.channel}</Badge>
+                      <Badge variant={toneByChannel[notification.channel]}>
+                        {notification.channel}
+                      </Badge>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
+                    <TableCell className="text-muted-foreground text-xs">
                       {formatTimestamp(notification.createdAt)}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={isUnread ? "secondary" : "ghost"}>{isUnread ? "Unread" : "Read"}</Badge>
+                      <Badge variant={isUnread ? "secondary" : "ghost"}>
+                        {isUnread ? "Unread" : "Read"}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-2">
@@ -237,10 +249,10 @@ export default function NotificationsPage() {
             </TableBody>
           </Table>
           {markAsReadMutation.isError ? (
-            <p className="px-6 pb-4 text-sm text-destructive">{markAsReadErrorMessage}</p>
+            <p className="text-destructive px-6 pb-4 text-sm">{markAsReadErrorMessage}</p>
           ) : null}
         </CardContent>
-        <CardFooter className="text-xs text-muted-foreground">
+        <CardFooter className="text-muted-foreground text-xs">
           Mark-as-read action uses `PATCH /notifications/:notificationId/read`.
         </CardFooter>
       </Card>

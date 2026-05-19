@@ -29,7 +29,10 @@ import {
 
 const QUERY_KEY_ORDER_DETAIL = "order-detail";
 
-const badgeVariantByStatus: Record<string, "default" | "secondary" | "outline" | "destructive" | "ghost"> = {
+const badgeVariantByStatus: Record<
+  string,
+  "default" | "secondary" | "outline" | "destructive" | "ghost"
+> = {
   "Awaiting Payment": "outline",
   "In Transit": "default",
   "Needs Confirmation": "secondary",
@@ -68,7 +71,7 @@ function SummaryCard({ title, value, helper }: { title: string; value: string; h
       </CardHeader>
       <CardContent>
         <p className="text-xl font-semibold">{value}</p>
-        <p className="text-xs text-muted-foreground">{helper}</p>
+        <p className="text-muted-foreground text-xs">{helper}</p>
       </CardContent>
     </Card>
   );
@@ -78,7 +81,11 @@ function Content({ order }: { order: Order }) {
   const financialRows = [
     { label: "Order total", value: order.total, notes: "Current order amount from API" },
     { label: "Currency", value: order.currency, notes: "Quoted transaction currency" },
-    { label: "Created at", value: formatTimestamp(order.createdAt), notes: "Order record timestamp" },
+    {
+      label: "Created at",
+      value: formatTimestamp(order.createdAt),
+      notes: "Order record timestamp",
+    },
     { label: "Updated at", value: formatTimestamp(order.updatedAt), notes: "Latest state update" },
   ];
 
@@ -86,9 +93,9 @@ function Content({ order }: { order: Order }) {
     <div className="container mx-auto space-y-6 px-4 py-8">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Order Detail</p>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">{order.lot}</h1>
-          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-xs tracking-[0.3em] uppercase">Order Detail</p>
+          <h1 className="text-foreground text-3xl font-bold tracking-tight">{order.lot}</h1>
+          <div className="text-muted-foreground flex flex-wrap items-center gap-3 text-sm">
             <Badge variant={badgeVariantByStatus[order.status] ?? "outline"}>{order.status}</Badge>
             <span>Order #{order.id}</span>
             <span>Last activity: {order.lastActivity}</span>
@@ -122,25 +129,25 @@ function Content({ order }: { order: Order }) {
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <p className="text-xs text-muted-foreground">Buyer</p>
+                <p className="text-muted-foreground text-xs">Buyer</p>
                 <p className="text-sm font-medium">{order.buyerId}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Seller</p>
+                <p className="text-muted-foreground text-xs">Seller</p>
                 <p className="text-sm font-medium">{order.sellerId}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Created</p>
+                <p className="text-muted-foreground text-xs">Created</p>
                 <p className="text-sm font-medium">{formatTimestamp(order.createdAt)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Updated</p>
+                <p className="text-muted-foreground text-xs">Updated</p>
                 <p className="text-sm font-medium">{formatTimestamp(order.updatedAt)}</p>
               </div>
             </div>
 
             <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">Tags</p>
+              <p className="text-muted-foreground text-xs">Tags</p>
               <div className="flex flex-wrap gap-2">
                 {order.tags.length === 0 ? (
                   <Badge variant="ghost">No tags</Badge>
@@ -169,7 +176,7 @@ function Content({ order }: { order: Order }) {
                 </Avatar>
                 <div>
                   <p className="text-sm font-medium">{order.buyerId}</p>
-                  <p className="text-xs text-muted-foreground">Buyer</p>
+                  <p className="text-muted-foreground text-xs">Buyer</p>
                 </div>
               </div>
               <Badge variant="outline">Active</Badge>
@@ -182,20 +189,24 @@ function Content({ order }: { order: Order }) {
                 </Avatar>
                 <div>
                   <p className="text-sm font-medium">{order.sellerId}</p>
-                  <p className="text-xs text-muted-foreground">Seller</p>
+                  <p className="text-muted-foreground text-xs">Seller</p>
                 </div>
               </div>
               <Badge variant="outline">Verified</Badge>
             </div>
           </CardContent>
-          <CardFooter className="text-xs text-muted-foreground">Data source is API-driven.</CardFooter>
+          <CardFooter className="text-muted-foreground text-xs">
+            Data source is API-driven.
+          </CardFooter>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Financial breakdown</CardTitle>
-          <CardDescription>Simple detail table until payment endpoints are integrated.</CardDescription>
+          <CardDescription>
+            Simple detail table until payment endpoints are integrated.
+          </CardDescription>
         </CardHeader>
         <CardContent className="px-0">
           <Table>
@@ -212,7 +223,7 @@ function Content({ order }: { order: Order }) {
                   <TableCell>{row.label}</TableCell>
                   <TableCell className="font-semibold">{row.value}</TableCell>
                   <TableCell>
-                    <p className="text-xs text-muted-foreground">{row.notes}</p>
+                    <p className="text-muted-foreground text-xs">{row.notes}</p>
                   </TableCell>
                 </TableRow>
               ))}
@@ -248,7 +259,8 @@ export default function OrdersDetailPage() {
           <CardHeader>
             <CardTitle>Order detail not available</CardTitle>
             <CardDescription>
-              We could not load this order from `/orders/:orderId`. Please verify the id or backend state.
+              We could not load this order from `/orders/:orderId`. Please verify the id or backend
+              state.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">

@@ -111,7 +111,7 @@ export function TypographySection() {
     <section className="space-y-10">
       <h2 className="text-xl font-semibold">Typography</h2>
       <p className="text-muted-foreground -mt-6 text-sm">
-        Font family: <span className="font-semibold text-foreground">Plus Jakarta Sans</span>
+        Font family: <span className="text-foreground font-semibold">Plus Jakarta Sans</span>
       </p>
 
       {categories.map((category) => {
@@ -121,7 +121,10 @@ export function TypographySection() {
             <p className="text-muted-foreground text-sm font-medium">{category}</p>
             <div className="divide-y rounded-xl border">
               {items.map((spec) => (
-                <div key={spec.name} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-start sm:gap-6">
+                <div
+                  key={spec.name}
+                  className="flex flex-col gap-3 p-5 sm:flex-row sm:items-start sm:gap-6"
+                >
                   <div className="w-32 shrink-0 space-y-0.5">
                     <p className="text-xs font-semibold">{spec.name}</p>
                     <p className="text-muted-foreground font-mono text-xs">{spec.size}</p>

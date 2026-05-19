@@ -7,7 +7,5 @@ import type { Bidding } from "../entities/bidding";
  * abstraction, not on any concrete implementation (DIP).
  */
 export interface IBiddingRepository {
-  // TODO: add repository methods matching your use-cases
-  // Example:
-  // getById(params: { id: string }): Promise<Bidding>;
+  getById(params: { id: string }): Promise<Bidding>;
 }

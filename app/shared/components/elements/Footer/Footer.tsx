@@ -30,7 +30,7 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="border-t bg-background">
+    <footer className="bg-background border-t">
       <div className="mx-auto max-w-7xl px-4 py-12 lg:px-6">
         <div className="grid gap-10 lg:grid-cols-12">
           {/* Brand */}
@@ -99,8 +99,7 @@ export function Footer() {
             © {new Date().getFullYear()} BidMart. All rights reserved.
           </p>
           <p className="text-muted-foreground text-sm">
-            Developed by{" "}
-            <span className="text-foreground font-semibold">AdvProg A10</span>
+            Developed by <span className="text-foreground font-semibold">AdvProg A10</span>
           </p>
         </div>
       </div>

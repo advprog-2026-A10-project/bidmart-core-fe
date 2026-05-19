@@ -40,7 +40,8 @@ export default function SellerOrdersShippingPage() {
   const useCases = React.useMemo(() => getOrderUseCases(), []);
   const queryClient = useQueryClient();
 
-  const [status, setStatus] = React.useState<(typeof shippingStatusOptions)[number]["value"]>("in_transit");
+  const [status, setStatus] =
+    React.useState<(typeof shippingStatusOptions)[number]["value"]>("in_transit");
   const [tracking, setTracking] = React.useState("");
 
   const orderQuery = useQuery({
@@ -105,9 +106,11 @@ export default function SellerOrdersShippingPage() {
   return (
     <div className="container mx-auto space-y-6 px-4 py-8">
       <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Seller portal</p>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Update shipping status</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-xs tracking-[0.3em] uppercase">Seller portal</p>
+        <h1 className="text-foreground text-3xl font-bold tracking-tight">
+          Update shipping status
+        </h1>
+        <p className="text-muted-foreground text-sm">
           Lot: {order.lot} - Order #{order.id}
         </p>
       </div>
@@ -120,7 +123,12 @@ export default function SellerOrdersShippingPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="shipping-status">Shipping status</Label>
-            <Select value={status} onValueChange={(value) => setStatus(value as (typeof shippingStatusOptions)[number]["value"])}>
+            <Select
+              value={status}
+              onValueChange={(value) =>
+                setStatus(value as (typeof shippingStatusOptions)[number]["value"])
+              }
+            >
               <SelectTrigger id="shipping-status" className="w-full">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
@@ -151,7 +159,7 @@ export default function SellerOrdersShippingPage() {
           ) : null}
 
           {updateShippingMutation.isError ? (
-            <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p className="border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm">
               {updateShippingErrorMessage}
             </p>
           ) : null}
@@ -160,7 +168,10 @@ export default function SellerOrdersShippingPage() {
             <Button asChild variant="outline">
               <Link to={`/seller/orders/${order.id}`}>Back to detail</Link>
             </Button>
-            <Button onClick={() => updateShippingMutation.mutate()} disabled={updateShippingMutation.isPending}>
+            <Button
+              onClick={() => updateShippingMutation.mutate()}
+              disabled={updateShippingMutation.isPending}
+            >
               {updateShippingMutation.isPending ? "Updating..." : "Update shipping"}
             </Button>
           </div>

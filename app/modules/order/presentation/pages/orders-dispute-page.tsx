@@ -102,9 +102,9 @@ export default function OrdersDisputePage() {
   return (
     <div className="container mx-auto space-y-6 px-4 py-8">
       <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Buyer action</p>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Create order dispute</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-xs tracking-[0.3em] uppercase">Buyer action</p>
+        <h1 className="text-foreground text-3xl font-bold tracking-tight">Create order dispute</h1>
+        <p className="text-muted-foreground text-sm">
           Submit issue to `POST /orders/:orderId/dispute/new`.
         </p>
       </div>
@@ -139,8 +139,9 @@ export default function OrdersDisputePage() {
                   onChange={(event) => setReason(event.target.value)}
                   rows={3}
                 />
-                <p className="text-xs text-muted-foreground">
-                  As required by milestone scope, reason must contain &quot;barang tidak sesuai&quot;.
+                <p className="text-muted-foreground text-xs">
+                  As required by milestone scope, reason must contain &quot;barang tidak
+                  sesuai&quot;.
                 </p>
               </div>
 
@@ -156,13 +157,13 @@ export default function OrdersDisputePage() {
               </div>
 
               {validationMessage ? (
-                <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <p className="border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm">
                   {validationMessage}
                 </p>
               ) : null}
 
               {disputeMutation.isError ? (
-                <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <p className="border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm">
                   {disputeErrorMessage}
                 </p>
               ) : null}
