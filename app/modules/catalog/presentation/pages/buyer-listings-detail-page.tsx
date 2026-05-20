@@ -149,12 +149,6 @@ export default function BuyerListingsDetailPage() {
                     {formatCurrency(listingQuery.data.listing.startPrice)}
                   </p>
                   <p>
-                    <span className="text-muted-foreground">Reserve price:</span>{" "}
-                    {listingQuery.data.listing.reservePrice
-                      ? formatCurrency(listingQuery.data.listing.reservePrice)
-                      : "None"}
-                  </p>
-                  <p>
                     <span className="text-muted-foreground">Min increment:</span>{" "}
                     {formatCurrency(listingQuery.data.listing.minIncrement)}
                   </p>

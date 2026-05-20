@@ -104,6 +104,49 @@ describe("CatalogApiRepository", () => {
     expect(result.data[0]?.currentPrice).toBe(1300000);
   });
 
+  // Backend buyer endpoints omit `seller_id` and `reserve_price` (reserve price
+  // must not leak to public). Regression test for the schema accepting that.
+  it("parses buyer catalog response that omits seller_id and reserve_price", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: [
+            {
+              id: "2d4d2f09-529e-4f97-a98b-c3f9fd581f4e",
+              seller_name: "Seller Alpha",
+              category_id: 12,
+              category_name: "Electronics",
+              title: "Mechanical Keyboard",
+              description: "Good condition",
+              start_price: 1200000,
+              current_price: 1300000,
+              min_increment: 100000,
+              bid_count: 2,
+              status: "Active",
+              auction_id: null,
+              starts_at: "2026-05-19T00:00:00Z",
+              ends_at: "2026-05-20T00:00:00Z",
+              created_at: "2026-05-18T00:00:00Z",
+              updated_at: "2026-05-18T00:30:00Z",
+            },
+          ],
+          total: 1,
+          page: 1,
+          page_size: 20,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const repository = new CatalogApiRepository();
+    const result = await repository.browseCatalog({ page: 1, pageSize: 20 });
+
+    expect(result.data[0]?.sellerId).toBeNull();
+    expect(result.data[0]?.reservePrice).toBeNull();
+    expect(result.data[0]?.sellerName).toBe("Seller Alpha");
+  });
+
   it("maps createListing payload and detail response", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify(mockListingDetailResponse()), {

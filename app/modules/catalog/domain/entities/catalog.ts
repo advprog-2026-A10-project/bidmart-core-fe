@@ -1,8 +1,10 @@
 export type ListingStatus = "Draft" | "Active" | "Sold" | "Cancelled" | "Expired" | string;
 
+// `sellerId` and `reservePrice` are only populated on seller-scoped endpoints.
+// Buyer/public endpoints omit them — reserve price must not leak to the public.
 export type CatalogListing = {
   readonly id: string;
-  readonly sellerId: string;
+  readonly sellerId: string | null;
   readonly sellerName: string;
   readonly categoryId: number | null;
   readonly categoryName: string;

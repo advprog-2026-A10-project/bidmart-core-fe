@@ -1,15 +1,20 @@
 import { z } from "zod";
 
+// Backend exposes two listing shapes:
+// - Seller (`/seller/listings/**`) includes `seller_id` and `reserve_price`.
+// - Buyer  (`/catalog`, `/c/*`, `/listings/:id`) intentionally omits both —
+//   reserve price must not leak to the public.
+// `.nullish()` accepts the field being missing OR explicitly null.
 export const catalogListingApiSchema = z.object({
   id: z.string().uuid(),
-  seller_id: z.string().uuid(),
+  seller_id: z.string().uuid().nullish(),
   seller_name: z.string(),
   category_id: z.number().int().nullable(),
   category_name: z.string(),
   title: z.string(),
   description: z.string(),
   start_price: z.number().int(),
-  reserve_price: z.number().int().nullable(),
+  reserve_price: z.number().int().nullish(),
   current_price: z.number().int(),
   min_increment: z.number().int(),
   bid_count: z.number().int(),

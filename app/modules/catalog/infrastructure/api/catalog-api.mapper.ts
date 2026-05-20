@@ -15,14 +15,14 @@ export class CatalogApiMapper {
   static toListing(raw: CatalogListingApi): CatalogListing {
     return {
       id: raw.id,
-      sellerId: raw.seller_id,
+      sellerId: raw.seller_id ?? null,
       sellerName: raw.seller_name,
       categoryId: raw.category_id,
       categoryName: raw.category_name,
       title: raw.title,
       description: raw.description,
       startPrice: raw.start_price,
-      reservePrice: raw.reserve_price,
+      reservePrice: raw.reserve_price ?? null,
       currentPrice: raw.current_price,
       minIncrement: raw.min_increment,
       bidCount: raw.bid_count,
