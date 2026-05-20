@@ -16,7 +16,6 @@ import {
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
 
-import { apiClient } from "~/shared/infrastructure/http/api-client";
 import { Badge } from "~/shared/components/ui/badge";
 import { Button } from "~/shared/components/ui/button";
 import {
@@ -30,10 +29,13 @@ import {
 import { Separator } from "~/shared/components/ui/separator";
 import { Skeleton } from "~/shared/components/ui/skeleton";
 import { Input } from "~/shared/components/ui/input";
+import { getBiddingUseCases } from "~/modules/bidding/infrastructure";
+import { BiddingApiMapper } from "~/modules/bidding/infrastructure/api/bidding-api.mapper";
+import { auctionApiSchema } from "~/modules/bidding/infrastructure/api/schemas";
+import type { Auction, AuctionStatus } from "~/modules/bidding/domain/entities/bidding";
 import { startAuctionRealtimeSocket } from "../../infrastructure/realtime/auction-websocket";
 import { BidForm } from "../components/bid-form";
 import { CountdownTimer } from "../components/countdown-timer";
-import { type AuctionDetail, type AuctionStatus } from "./constant";
 
 type BidFormValues = {
   amount: number;
@@ -42,62 +44,6 @@ type BidFormValues = {
 
 const AUCTION_DETAIL_QUERY_KEY = "auction-detail";
 const AUCTION_PROXY_QUERY_KEY = "auction-proxy";
-
-type AuctionDetailApiResponse = {
-  id: string;
-  listingId: string;
-  sellerId: string;
-  sellerName: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  startPrice: number;
-  currentPrice: number;
-  reservePrice: number | null;
-  bidIncrement: number;
-  bidCount: number;
-  status: AuctionStatus;
-  winnerId: string | null;
-  winnerName: string | null;
-  startsAt: string;
-  endsAt: string;
-  originalEndsAt: string;
-  extensionCount: number;
-  createdAt: string;
-  highestBidderAlias?: string | null;
-  myLatestBid?: number | null;
-};
-
-type PlaceBidApiResponse = {
-  bidId: string;
-  auctionId: string;
-  currentPrice: number;
-  bidCount: number;
-  endsAt: string;
-  extended: boolean;
-  extensionCount: number;
-  minimumNextBid: number;
-  autoBidApplied?: boolean;
-  effectiveWinnerId?: string;
-};
-
-type ProxyBidApiResponse = {
-  auctionId: string;
-  bidderId: string;
-  enabled: boolean;
-  maxAmount: number | null;
-  auctionStatus: string;
-  currentPrice: number;
-  minimumProxyAmount: number;
-  currentlyLeading: boolean;
-  updatedAt: string | null;
-};
-
-type DisableProxyBidApiResponse = {
-  auctionId: string;
-  bidderId: string;
-  disabled: boolean;
-};
 
 type StreamBidPlacedEvent = {
   auctionId: string;
@@ -151,21 +97,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function extractAuctionSnapshotPayload(payload: unknown): AuctionDetailApiResponse | null {
-  if (
-    isRecord(payload) &&
-    typeof payload.id === "string" &&
-    typeof payload.listingId === "string"
-  ) {
-    return payload as AuctionDetailApiResponse;
-  }
-  if (isRecord(payload) && isRecord(payload.auction)) {
-    const nested = payload.auction;
-    if (typeof nested.id === "string" && typeof nested.listingId === "string") {
-      return nested as AuctionDetailApiResponse;
-    }
-  }
-  return null;
+function extractAuctionSnapshot(payload: unknown): Auction | null {
+  const candidate =
+    isRecord(payload) && isRecord(payload.auction) ? payload.auction : payload;
+  const parsed = auctionApiSchema.safeParse(candidate);
+  return parsed.success ? BiddingApiMapper.toAuction(parsed.data) : null;
 }
 
 function extractBidPlacedPayload(payload: unknown): StreamBidPlacedEvent | null {
@@ -204,36 +140,7 @@ function extractFinalizedPayload(payload: unknown): StreamFinalizedEvent | null 
   return null;
 }
 
-function mapAuctionApiToDomain(raw: AuctionDetailApiResponse): AuctionDetail {
-  return {
-    id: raw.id,
-    listingId: raw.listingId,
-    sellerId: raw.sellerId,
-    sellerName: raw.sellerName,
-    title: raw.title,
-    description: raw.description,
-    imageUrl: raw.imageUrl,
-    startPrice: raw.startPrice,
-    currentPrice: raw.currentPrice,
-    reservePrice: raw.reservePrice,
-    bidIncrement: raw.bidIncrement,
-    bidCount: raw.bidCount,
-    status: raw.status,
-    winnerId: raw.winnerId,
-    winnerName: raw.winnerName,
-    startsAt: raw.startsAt,
-    endsAt: raw.endsAt,
-    originalEndsAt: raw.originalEndsAt,
-    extensionCount: raw.extensionCount,
-    createdAt: raw.createdAt,
-    watchersCount: 0,
-    highestBidderAlias: raw.highestBidderAlias ?? "No bids yet",
-    myLatestBid: raw.myLatestBid ?? null,
-    currency: "IDR",
-  };
-}
-
-function getEffectiveStatus(auction: AuctionDetail): AuctionStatus {
+function getEffectiveStatus(auction: Auction): AuctionStatus {
   if (auction.status === "ACTIVE" && auction.extensionCount > 0) {
     return "EXTENDED";
   }
@@ -335,26 +242,17 @@ export default function AuctionsDetailPage() {
   const [proxyMaxAmountDraft, setProxyMaxAmountDraft] = useState("");
   const [isProxyDraftDirty, setIsProxyDraftDirty] = useState(false);
 
+  const useCases = getBiddingUseCases();
+
   const auctionQuery = useQuery({
     queryKey: [AUCTION_DETAIL_QUERY_KEY, auctionId],
-    queryFn: async () => {
-      const raw = await apiClient.get<AuctionDetailApiResponse>(`/auctions/${auctionId}`);
-      return mapAuctionApiToDomain(raw);
-    },
+    queryFn: () => useCases.getAuction.execute({ auctionId }),
     enabled: Boolean(auctionId),
   });
 
   const placeBidMutation = useMutation({
-    mutationFn: async ({ amount, maxAmount }: BidFormValues) => {
-      const body: { amount: number; maxAmount?: number } = { amount };
-      if (maxAmount !== undefined) {
-        body.maxAmount = maxAmount;
-      }
-
-      return apiClient.post<PlaceBidApiResponse>(`/auctions/${auctionId}/bids`, {
-        ...body,
-      });
-    },
+    mutationFn: ({ amount, maxAmount }: BidFormValues) =>
+      useCases.placeBid.execute({ auctionId, amount, maxAmount }),
     onSuccess: async (result) => {
       await queryClient.invalidateQueries({
         queryKey: [AUCTION_DETAIL_QUERY_KEY, auctionId],
@@ -371,18 +269,13 @@ export default function AuctionsDetailPage() {
 
   const proxyQuery = useQuery({
     queryKey: [AUCTION_PROXY_QUERY_KEY, auctionId],
-    queryFn: async () => {
-      return apiClient.get<ProxyBidApiResponse>(`/auctions/${auctionId}/proxy`);
-    },
+    queryFn: () => useCases.getMyProxyBid.execute({ auctionId }),
     enabled: Boolean(auctionId),
   });
 
   const upsertProxyMutation = useMutation({
-    mutationFn: async ({ maxAmount }: { maxAmount: number }) => {
-      return apiClient.put<ProxyBidApiResponse>(`/auctions/${auctionId}/proxy`, {
-        maxAmount,
-      });
-    },
+    mutationFn: ({ maxAmount }: { maxAmount: number }) =>
+      useCases.upsertMyProxyBid.execute({ auctionId, maxAmount }),
     onSuccess: async (result) => {
       setProxyMaxAmountDraft(result.maxAmount ? String(result.maxAmount) : "");
       setIsProxyDraftDirty(false);
@@ -394,9 +287,7 @@ export default function AuctionsDetailPage() {
   });
 
   const disableProxyMutation = useMutation({
-    mutationFn: async () => {
-      return apiClient.delete<DisableProxyBidApiResponse>(`/auctions/${auctionId}/proxy`);
-    },
+    mutationFn: () => useCases.disableMyProxyBid.execute({ auctionId }),
     onSuccess: async (result) => {
       setProxyMaxAmountDraft("");
       setIsProxyDraftDirty(false);
@@ -418,20 +309,21 @@ export default function AuctionsDetailPage() {
       auctionId,
       onEvent: (event) => {
         if (event.type === "snapshot") {
-          const snapshot = extractAuctionSnapshotPayload(event.payload);
+          const snapshot = extractAuctionSnapshot(event.payload);
           if (!snapshot) {
             return;
           }
 
-          const hasMyLatestBid = Object.prototype.hasOwnProperty.call(snapshot, "myLatestBid");
-          queryClient.setQueryData<AuctionDetail>(
+          const snapshotHasMyLatestBid =
+            isRecord(event.payload) &&
+            Object.prototype.hasOwnProperty.call(event.payload, "myLatestBid");
+          queryClient.setQueryData<Auction>(
             [AUCTION_DETAIL_QUERY_KEY, auctionId],
             (current) => {
-              const mapped = mapAuctionApiToDomain(snapshot);
-              if (!hasMyLatestBid && current) {
-                mapped.myLatestBid = current.myLatestBid;
+              if (snapshotHasMyLatestBid || !current) {
+                return snapshot;
               }
-              return mapped;
+              return { ...snapshot, myLatestBid: current.myLatestBid };
             },
           );
           return;
@@ -576,7 +468,9 @@ export default function AuctionsDetailPage() {
                   </div>
                   <p className="text-2xl font-semibold">{auction.bidCount} bids</p>
                   <p className="text-muted-foreground mt-1 text-sm">
-                    {auction.watchersCount} watchers
+                    {auction.extensionCount > 0
+                      ? `Extended ${auction.extensionCount}x by anti-sniping`
+                      : "No anti-sniping extensions applied"}
                   </p>
                 </div>
               </div>

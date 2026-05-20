@@ -1,26 +1,40 @@
 import { BiddingApiRepository } from "../repositories/bidding-api.repository";
-import { GetBiddingUseCase } from "~/modules/bidding/application/use-cases/get-bidding.use-case";
+import {
+  DisableMyProxyBidUseCase,
+  GetAuctionHistoryUseCase,
+  GetAuctionUseCase,
+  GetMyBidDetailUseCase,
+  GetMyProxyBidUseCase,
+  ListMyBidsUseCase,
+  PlaceBidUseCase,
+  UpsertMyProxyBidUseCase,
+} from "~/modules/bidding/application/use-cases";
 
-/**
- * BiddingUseCaseFactory — wires up the dependency graph for the bidding module.
- *
- * Factory pattern: centralises construction so that swap-ins (e.g. mock repos in tests)
- * only require changing this one place. Use cases are unaware of which concrete
- * repository implementation they receive (DIP satisfied).
- */
 export type BiddingUseCases = {
-  getBidding: GetBiddingUseCase;
+  getAuction: GetAuctionUseCase;
+  getAuctionHistory: GetAuctionHistoryUseCase;
+  placeBid: PlaceBidUseCase;
+  getMyProxyBid: GetMyProxyBidUseCase;
+  upsertMyProxyBid: UpsertMyProxyBidUseCase;
+  disableMyProxyBid: DisableMyProxyBidUseCase;
+  listMyBids: ListMyBidsUseCase;
+  getMyBidDetail: GetMyBidDetailUseCase;
 };
 
 export function createBiddingUseCases(): BiddingUseCases {
-  const biddingRepository = new BiddingApiRepository();
-
+  const repository = new BiddingApiRepository();
   return {
-    getBidding: new GetBiddingUseCase(biddingRepository),
+    getAuction: new GetAuctionUseCase(repository),
+    getAuctionHistory: new GetAuctionHistoryUseCase(repository),
+    placeBid: new PlaceBidUseCase(repository),
+    getMyProxyBid: new GetMyProxyBidUseCase(repository),
+    upsertMyProxyBid: new UpsertMyProxyBidUseCase(repository),
+    disableMyProxyBid: new DisableMyProxyBidUseCase(repository),
+    listMyBids: new ListMyBidsUseCase(repository),
+    getMyBidDetail: new GetMyBidDetailUseCase(repository),
   };
 }
 
-// Singleton for client-side usage (avoids re-creating on every render)
 let _biddingUseCases: BiddingUseCases | undefined;
 
 export function getBiddingUseCases(): BiddingUseCases {

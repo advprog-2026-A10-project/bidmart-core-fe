@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { Link, useParams } from "react-router";
 
-import { apiClient } from "~/shared/infrastructure/http/api-client";
 import { Badge } from "~/shared/components/ui/badge";
 import { Button } from "~/shared/components/ui/button";
 import {
@@ -33,66 +32,19 @@ import {
   TableHeader,
   TableRow,
 } from "~/shared/components/ui/table";
+import { getBiddingUseCases } from "~/modules/bidding/infrastructure";
+import { BiddingApiMapper } from "~/modules/bidding/infrastructure/api/bidding-api.mapper";
+import { auctionApiSchema } from "~/modules/bidding/infrastructure/api/schemas";
+import type {
+  Auction,
+  AuctionHistory,
+  AuctionStatus,
+  BidHistoryEntry,
+} from "~/modules/bidding/domain/entities/bidding";
 import { startAuctionRealtimeSocket } from "../../infrastructure/realtime/auction-websocket";
 import { CountdownTimer } from "../components/countdown-timer";
-import { type AuctionDetail, type AuctionStatus, type BidHistoryEntry } from "./constant";
 
 const AUCTION_HISTORY_QUERY_KEY = "auction-history";
-
-type AuctionDetailApiResponse = {
-  id: string;
-  listingId: string;
-  sellerId: string;
-  sellerName: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  startPrice: number;
-  currentPrice: number;
-  reservePrice: number | null;
-  bidIncrement: number;
-  bidCount: number;
-  status: AuctionStatus;
-  winnerId: string | null;
-  winnerName: string | null;
-  startsAt: string;
-  endsAt: string;
-  originalEndsAt: string;
-  extensionCount: number;
-  createdAt: string;
-  highestBidderAlias?: string | null;
-  myLatestBid?: number | null;
-};
-
-type BidHistoryEntryApiResponse = {
-  id: string;
-  auctionId: string;
-  bidderId: string;
-  bidderName: string;
-  amount: number;
-  status: "LEADING" | "OUTBID";
-  acceptedAt: string;
-  receivedSequence: number;
-  isMyBid: boolean;
-};
-
-type AuctionHistoryApiResponse = {
-  auction: AuctionDetailApiResponse;
-  bids: BidHistoryEntryApiResponse[];
-  ordering: {
-    primary: string;
-    secondary: string;
-  };
-};
-
-type AuctionHistoryQueryData = {
-  auction: AuctionDetail;
-  bids: BidHistoryEntry[];
-  ordering: {
-    primary: string;
-    secondary: string;
-  };
-};
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("id-ID", {
@@ -130,21 +82,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function extractAuctionSnapshotPayload(payload: unknown): AuctionDetailApiResponse | null {
-  if (
-    isRecord(payload) &&
-    typeof payload.id === "string" &&
-    typeof payload.listingId === "string"
-  ) {
-    return payload as AuctionDetailApiResponse;
-  }
-  if (isRecord(payload) && isRecord(payload.auction)) {
-    const nested = payload.auction;
-    if (typeof nested.id === "string" && typeof nested.listingId === "string") {
-      return nested as AuctionDetailApiResponse;
-    }
-  }
-  return null;
+function extractAuctionSnapshot(payload: unknown): Auction | null {
+  const candidate =
+    isRecord(payload) && isRecord(payload.auction) ? payload.auction : payload;
+  const parsed = auctionApiSchema.safeParse(candidate);
+  return parsed.success ? BiddingApiMapper.toAuction(parsed.data) : null;
 }
 
 function sortBidHistory(bids: BidHistoryEntry[]) {
@@ -160,51 +102,7 @@ function sortBidHistory(bids: BidHistoryEntry[]) {
   });
 }
 
-function mapAuctionApiToDomain(raw: AuctionDetailApiResponse): AuctionDetail {
-  return {
-    id: raw.id,
-    listingId: raw.listingId,
-    sellerId: raw.sellerId,
-    sellerName: raw.sellerName,
-    title: raw.title,
-    description: raw.description,
-    imageUrl: raw.imageUrl,
-    startPrice: raw.startPrice,
-    currentPrice: raw.currentPrice,
-    reservePrice: raw.reservePrice,
-    bidIncrement: raw.bidIncrement,
-    bidCount: raw.bidCount,
-    status: raw.status,
-    winnerId: raw.winnerId,
-    winnerName: raw.winnerName,
-    startsAt: raw.startsAt,
-    endsAt: raw.endsAt,
-    originalEndsAt: raw.originalEndsAt,
-    extensionCount: raw.extensionCount,
-    createdAt: raw.createdAt,
-    watchersCount: 0,
-    highestBidderAlias: raw.highestBidderAlias ?? "No bids yet",
-    myLatestBid: raw.myLatestBid ?? null,
-    currency: "IDR",
-  };
-}
-
-function mapBidApiToDomain(raw: BidHistoryEntryApiResponse): BidHistoryEntry {
-  return {
-    id: raw.id,
-    auctionId: raw.auctionId,
-    bidderId: raw.bidderId,
-    bidderAlias: raw.bidderName,
-    amount: raw.amount,
-    placedAt: raw.acceptedAt,
-    acceptedAt: raw.acceptedAt,
-    receivedSequence: raw.receivedSequence,
-    status: raw.status,
-    isMyBid: raw.isMyBid,
-  };
-}
-
-function getEffectiveStatus(auction: AuctionDetail): AuctionStatus {
+function getEffectiveStatus(auction: Auction): AuctionStatus {
   if (auction.status === "ACTIVE" && auction.extensionCount > 0) {
     return "EXTENDED";
   }
@@ -322,16 +220,11 @@ export default function AuctionsHistoryPage() {
   const auctionId = params.auctionId ?? "";
   const queryClient = useQueryClient();
 
+  const useCases = getBiddingUseCases();
+
   const historyQuery = useQuery({
     queryKey: [AUCTION_HISTORY_QUERY_KEY, auctionId],
-    queryFn: async () => {
-      const raw = await apiClient.get<AuctionHistoryApiResponse>(`/auctions/${auctionId}/history`);
-      return {
-        auction: mapAuctionApiToDomain(raw.auction),
-        bids: raw.bids.map((bid) => mapBidApiToDomain(bid)),
-        ordering: raw.ordering,
-      };
-    },
+    queryFn: () => useCases.getAuctionHistory.execute({ auctionId }),
     select: (payload) => ({
       ...payload,
       bids: sortBidHistory(payload.bids),
@@ -349,20 +242,17 @@ export default function AuctionsHistoryPage() {
       auctionId,
       onEvent: (event) => {
         if (event.type === "snapshot") {
-          const snapshot = extractAuctionSnapshotPayload(event.payload);
+          const snapshot = extractAuctionSnapshot(event.payload);
           if (!snapshot) {
             return;
           }
 
-          queryClient.setQueryData<AuctionHistoryQueryData>(key, (current) => {
+          queryClient.setQueryData<AuctionHistory>(key, (current) => {
             if (!current) {
               return current;
             }
 
-            return {
-              ...current,
-              auction: mapAuctionApiToDomain(snapshot),
-            };
+            return { ...current, auction: snapshot };
           });
           return;
         }

@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { Link, useParams } from "react-router";
 
-import { apiClient } from "~/shared/infrastructure/http/api-client";
 import { Badge } from "~/shared/components/ui/badge";
 import { Button } from "~/shared/components/ui/button";
 import {
@@ -33,67 +32,16 @@ import {
   TableHeader,
   TableRow,
 } from "~/shared/components/ui/table";
-import {
-  type AuctionStatus,
-  type BidActivityType,
-  type BidDetail,
-  type MyBidStatus,
-} from "./bid-detail.constant";
+import { getBiddingUseCases } from "~/modules/bidding/infrastructure";
+import type {
+  AuctionHistory,
+  AuctionStatus,
+  MyBidDetail,
+  MyBidStatus,
+} from "~/modules/bidding/domain/entities/bidding";
+import type { BidActivityType, BidDetail } from "./bid-detail.constant";
 
 const BID_DETAIL_QUERY_KEY = "bid-detail";
-
-type AuctionDetailApiResponse = {
-  id: string;
-  listingId: string;
-  sellerId: string;
-  sellerName: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  startPrice: number;
-  currentPrice: number;
-  reservePrice: number | null;
-  bidIncrement: number;
-  bidCount: number;
-  status: string;
-  winnerId: string | null;
-  winnerName: string | null;
-  startsAt: string;
-  endsAt: string;
-  originalEndsAt: string;
-  extensionCount: number;
-  createdAt: string;
-  highestBidderAlias?: string | null;
-};
-
-type MyBidTimelineApiResponse = {
-  at: string;
-  type: string;
-  amount: number | null;
-  note: string;
-};
-
-type MyBidDetailApiResponse = {
-  auction: AuctionDetailApiResponse;
-  myLatestBid: number;
-  myBidStatus: string;
-  winningGap: number;
-  isReserveMet: boolean;
-  placedBidCount: number;
-  timeline: MyBidTimelineApiResponse[];
-};
-
-type AuctionHistoryApiEntry = {
-  id: string;
-  bidderName: string;
-  amount: number;
-  acceptedAt: string;
-  isMyBid: boolean;
-};
-
-type AuctionHistoryApiResponse = {
-  bids: AuctionHistoryApiEntry[];
-};
 
 function formatCurrency(value: number | null) {
   if (value === null) {
@@ -199,33 +147,6 @@ function getMyStatusBadgeClasses(status: MyBidStatus) {
   }
 }
 
-function toAuctionStatus(status: string): AuctionStatus {
-  switch (status) {
-    case "DRAFT":
-    case "SCHEDULED":
-    case "ACTIVE":
-    case "EXTENDED":
-    case "CLOSED":
-    case "WON":
-    case "UNSOLD":
-      return status;
-    default:
-      return "CLOSED";
-  }
-}
-
-function toMyBidStatus(status: string): MyBidStatus {
-  switch (status) {
-    case "WINNING":
-    case "OUTBID":
-    case "WON":
-    case "LOST":
-      return status;
-    default:
-      return "LOST";
-  }
-}
-
 function getActivityTypeLabel(type: BidActivityType) {
   switch (type) {
     case "PLACED_BID":
@@ -295,28 +216,30 @@ function buildSummary(status: MyBidStatus, winningGap: number): { headline: stri
   }
 }
 
-function mapDetailApiToView(
-  raw: MyBidDetailApiResponse,
-  history: AuctionHistoryApiResponse,
+function mapDetailToView(
+  detail: MyBidDetail,
+  history: AuctionHistory,
 ): { detail: BidDetail } {
-  const myBidStatus = toMyBidStatus(raw.myBidStatus);
-  const auctionStatus = toAuctionStatus(raw.auction.status);
+  const myBidStatus = detail.myBidStatus;
+  const auctionStatus = detail.auction.status;
   const historyPreview = history.bids.slice(0, 5).map((entry) => ({
     id: entry.id,
-    bidderAlias: entry.bidderName,
+    bidderAlias: entry.bidderAlias,
     amount: entry.amount,
     acceptedAt: entry.acceptedAt,
     isMyBid: entry.isMyBid,
   }));
 
-  const timelineAmounts = raw.timeline
+  const timelineAmounts = detail.timeline
     .map((entry) => entry.amount)
     .filter((amount): amount is number => typeof amount === "number");
-  const myHighestBid = timelineAmounts.length > 0 ? Math.max(...timelineAmounts) : raw.myLatestBid;
+  const myHighestBid =
+    timelineAmounts.length > 0 ? Math.max(...timelineAmounts) : detail.myLatestBid;
   const myLastBidAt =
-    raw.timeline.find((entry) => typeof entry.amount === "number")?.at ?? raw.auction.createdAt;
+    detail.timeline.find((entry) => typeof entry.amount === "number")?.at ??
+    detail.auction.createdAt;
 
-  const activities = raw.timeline.map((entry, index) => ({
+  const activities = detail.timeline.map((entry, index) => ({
     id: `activity-${index}`,
     type: sanitizeActivityType(entry.type),
     actorId: entry.type === "OUTBID" ? null : "me",
@@ -329,48 +252,46 @@ function mapDetailApiToView(
 
   const minimumNextBid =
     auctionStatus === "ACTIVE" || auctionStatus === "EXTENDED"
-      ? raw.auction.currentPrice + raw.auction.bidIncrement
+      ? detail.auction.currentPrice + detail.auction.bidIncrement
       : null;
 
   return {
     detail: {
       auction: {
-        id: raw.auction.id,
-        listingId: raw.auction.listingId,
-        sellerId: raw.auction.sellerId,
-        sellerName: raw.auction.sellerName,
-        title: raw.auction.title,
-        description: raw.auction.description,
-        imageUrl:
-          raw.auction.imageUrl ||
-          "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=80",
-        startPrice: raw.auction.startPrice,
-        currentPrice: raw.auction.currentPrice,
-        reservePrice: raw.auction.reservePrice,
-        bidIncrement: raw.auction.bidIncrement,
-        bidCount: raw.auction.bidCount,
+        id: detail.auction.id,
+        listingId: detail.auction.listingId,
+        sellerId: detail.auction.sellerId,
+        sellerName: detail.auction.sellerName,
+        title: detail.auction.title,
+        description: detail.auction.description,
+        imageUrl: detail.auction.imageUrl,
+        startPrice: detail.auction.startPrice,
+        currentPrice: detail.auction.currentPrice,
+        reservePrice: detail.auction.reservePrice,
+        bidIncrement: detail.auction.bidIncrement,
+        bidCount: detail.auction.bidCount,
         status: auctionStatus,
-        winnerId: raw.auction.winnerId,
-        winnerName: raw.auction.winnerName,
-        startsAt: raw.auction.startsAt,
-        endsAt: raw.auction.endsAt,
-        originalEndsAt: raw.auction.originalEndsAt,
-        extensionCount: raw.auction.extensionCount,
-        createdAt: raw.auction.createdAt,
+        winnerId: detail.auction.winnerId,
+        winnerName: detail.auction.winnerName,
+        startsAt: detail.auction.startsAt,
+        endsAt: detail.auction.endsAt,
+        originalEndsAt: detail.auction.originalEndsAt,
+        extensionCount: detail.auction.extensionCount,
+        createdAt: detail.auction.createdAt,
         currency: "IDR",
-        highestBidderAlias: raw.auction.highestBidderAlias ?? "No bids yet",
+        highestBidderAlias: detail.auction.highestBidderAlias,
       },
       myBidStatus,
-      myLatestBid: raw.myLatestBid,
+      myLatestBid: detail.myLatestBid,
       myHighestBid,
-      myBidCount: raw.placedBidCount,
+      myBidCount: detail.placedBidCount,
       myLastBidAt,
       myRank: null,
-      isReserveMet: raw.isReserveMet,
+      isReserveMet: detail.isReserveMet,
       minimumNextBid,
       canBidAgain: auctionStatus === "ACTIVE" || auctionStatus === "EXTENDED",
-      winningGap: raw.winningGap,
-      summary: buildSummary(myBidStatus, raw.winningGap),
+      winningGap: detail.winningGap,
+      summary: buildSummary(myBidStatus, detail.winningGap),
       historyPreview,
       activities,
     },
@@ -424,14 +345,16 @@ function LoadingState() {
 export default function BiddingDetailPage() {
   const { auctionId = "" } = useParams();
 
+  const useCases = getBiddingUseCases();
+
   const bidDetailQuery = useQuery({
     queryKey: [BID_DETAIL_QUERY_KEY, auctionId],
     queryFn: async () => {
-      const [rawDetail, rawHistory] = await Promise.all([
-        apiClient.get<MyBidDetailApiResponse>(`/me/bids/${auctionId}`),
-        apiClient.get<AuctionHistoryApiResponse>(`/auctions/${auctionId}/history`),
+      const [detail, history] = await Promise.all([
+        useCases.getMyBidDetail.execute({ auctionId }),
+        useCases.getAuctionHistory.execute({ auctionId }),
       ]);
-      return mapDetailApiToView(rawDetail, rawHistory);
+      return mapDetailToView(detail, history);
     },
     enabled: Boolean(auctionId),
     staleTime: 60_000,

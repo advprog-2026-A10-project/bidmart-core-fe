@@ -1,11 +1,34 @@
-import type { Bidding } from "../entities/bidding";
+import type {
+  Auction,
+  AuctionHistory,
+  DisableProxyBidResult,
+  MyBidDetail,
+  MyBidsOverview,
+  PlaceBidResult,
+  ProxyBidStatus,
+} from "~/modules/bidding/domain/entities/bidding";
+import type {
+  FinalizeAuctionDTO,
+  GetAuctionDTO,
+  GetAuctionHistoryDTO,
+  GetMyBidDetailDTO,
+  ListMyBidsDTO,
+  PlaceBidDTO,
+  ProxyBidActionDTO,
+  UpsertProxyBidDTO,
+} from "~/modules/bidding/application/dtos/bidding.dto";
 
-/**
- * IBiddingRepository — Repository Interface (Port)
- *
- * Defines the contract for bidding data access. Use cases depend on this
- * abstraction, not on any concrete implementation (DIP).
- */
 export interface IBiddingRepository {
-  getById(params: { id: string }): Promise<Bidding>;
+  getAuction(params: GetAuctionDTO): Promise<Auction>;
+  getAuctionHistory(params: GetAuctionHistoryDTO): Promise<AuctionHistory>;
+  placeBid(params: PlaceBidDTO): Promise<PlaceBidResult>;
+
+  getMyProxyBid(params: ProxyBidActionDTO): Promise<ProxyBidStatus>;
+  upsertMyProxyBid(params: UpsertProxyBidDTO): Promise<ProxyBidStatus>;
+  disableMyProxyBid(params: ProxyBidActionDTO): Promise<DisableProxyBidResult>;
+
+  finalizeAuction(params: FinalizeAuctionDTO): Promise<Auction>;
+
+  listMyBids(params: ListMyBidsDTO): Promise<MyBidsOverview>;
+  getMyBidDetail(params: GetMyBidDetailDTO): Promise<MyBidDetail>;
 }

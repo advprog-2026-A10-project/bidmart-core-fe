@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 
-import { apiClient } from "~/shared/infrastructure/http/api-client";
 import { Badge } from "~/shared/components/ui/badge";
 import { Button } from "~/shared/components/ui/button";
 import {
@@ -33,52 +32,16 @@ import {
   TableRow,
 } from "~/shared/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "~/shared/components/ui/tabs";
-import {
-  type AuctionStatus,
-  type MyBidFilterValue,
-  type MyBidListItem,
-  type MyBidStatus,
-} from "./constant";
+import { getBiddingUseCases } from "~/modules/bidding/infrastructure";
+import type {
+  AuctionStatus,
+  MyBidFilterValue,
+  MyBidListItem,
+  MyBidStatus,
+} from "~/modules/bidding/domain/entities/bidding";
 
 const MY_BIDS_QUERY_KEY = "my-bids";
 const VALID_FILTERS: MyBidFilterValue[] = ["all", "winning", "outbid", "won", "lost"];
-
-type MyBidApiItem = {
-  auctionId: string;
-  listingId: string;
-  sellerId: string;
-  sellerName: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  startPrice: number;
-  currentPrice: number;
-  reservePrice: number | null;
-  bidIncrement: number;
-  bidCount: number;
-  auctionStatus: string;
-  myBidStatus: string;
-  winnerId: string | null;
-  winnerName: string | null;
-  startsAt: string;
-  endsAt: string;
-  originalEndsAt: string;
-  extensionCount: number;
-  highestBidderAlias: string | null;
-  myLatestBid: number;
-  lastBidAt: string;
-  isReserveMet: boolean;
-  currency: string;
-};
-
-type MyBidApiResponse = {
-  user: {
-    id: string;
-    name: string;
-  };
-  data: MyBidApiItem[];
-  summary: Record<MyBidFilterValue, number>;
-};
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("id-ID", {
@@ -106,65 +69,6 @@ function formatRelativeAuctionTime(value: string) {
 
   const days = Math.round(absDiff / (24 * 60 * 60 * 1000));
   return diff >= 0 ? `Ends in ${days}d` : `Ended ${days}d ago`;
-}
-
-function toAuctionStatus(status: string): AuctionStatus {
-  switch (status) {
-    case "DRAFT":
-    case "SCHEDULED":
-    case "ACTIVE":
-    case "EXTENDED":
-    case "CLOSED":
-    case "WON":
-    case "UNSOLD":
-      return status;
-    default:
-      return "CLOSED";
-  }
-}
-
-function toMyBidStatus(status: string): MyBidStatus {
-  switch (status) {
-    case "WINNING":
-    case "OUTBID":
-    case "WON":
-    case "LOST":
-      return status;
-    default:
-      return "LOST";
-  }
-}
-
-function mapMyBidApiItemToView(item: MyBidApiItem): MyBidListItem {
-  return {
-    auctionId: item.auctionId,
-    listingId: item.listingId,
-    sellerId: item.sellerId,
-    sellerName: item.sellerName,
-    title: item.title,
-    description: item.description,
-    imageUrl:
-      item.imageUrl ||
-      "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=80",
-    startPrice: item.startPrice,
-    currentPrice: item.currentPrice,
-    reservePrice: item.reservePrice,
-    bidIncrement: item.bidIncrement,
-    bidCount: item.bidCount,
-    auctionStatus: toAuctionStatus(item.auctionStatus),
-    myBidStatus: toMyBidStatus(item.myBidStatus),
-    winnerId: item.winnerId,
-    winnerName: item.winnerName,
-    startsAt: item.startsAt,
-    endsAt: item.endsAt,
-    originalEndsAt: item.originalEndsAt,
-    extensionCount: item.extensionCount,
-    highestBidderAlias: item.highestBidderAlias ?? "No bids yet",
-    myLatestBid: item.myLatestBid,
-    lastBidAt: item.lastBidAt,
-    isReserveMet: item.isReserveMet,
-    currency: "IDR",
-  };
 }
 
 function getAuctionStatusLabel(status: AuctionStatus) {
@@ -398,17 +302,14 @@ export default function BiddingPage() {
     ? (rawStatus as MyBidFilterValue)
     : "all";
 
+  const useCases = getBiddingUseCases();
+
   const myBidsQuery = useQuery({
     queryKey: [MY_BIDS_QUERY_KEY, activeFilter],
-    queryFn: async () => {
-      const query = activeFilter === "all" ? "" : `?status=${activeFilter}`;
-      const raw = await apiClient.get<MyBidApiResponse>(`/me/bids${query}`);
-      return {
-        user: raw.user,
-        summary: raw.summary,
-        bids: raw.data.map((item) => mapMyBidApiItemToView(item)),
-      };
-    },
+    queryFn: () =>
+      useCases.listMyBids.execute(
+        activeFilter === "all" ? {} : { status: activeFilter },
+      ),
   });
 
   const handleFilterChange = (nextValue: MyBidFilterValue) => {
