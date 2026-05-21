@@ -3,6 +3,8 @@ import { defineConfig, devices } from "playwright/test";
 const port = Number(process.env.E2E_PORT ?? 3107);
 const host = "127.0.0.1";
 const baseURL = `http://${host}:${port}`;
+const apiPort = Number(process.env.E2E_API_PORT ?? 18081);
+const apiBaseURL = `http://${host}:${apiPort}`;
 const browserChannel = process.env.E2E_BROWSER_CHANNEL;
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 const skipWebServer = process.env.E2E_SKIP_WEBSERVER === "true";
@@ -15,7 +17,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1,
   reporter: [
     ["list"],
     ["html", { outputFolder: "e2e/.report", open: "never" }],
@@ -29,17 +31,30 @@ export default defineConfig({
   },
   webServer: skipWebServer
     ? undefined
-    : {
+    : [
+      {
+        command: `node e2e/mock-api.mjs`,
+        url: `${apiBaseURL}/healthz`,
+        reuseExistingServer: !process.env.CI,
+        timeout: 30_000,
+        env: {
+          ...process.env,
+          E2E_API_HOST: host,
+          E2E_API_PORT: String(apiPort),
+        },
+      },
+      {
         command: `${npmCommand} run dev -- --host ${host} --port ${port}`,
         url: baseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
         env: {
           ...process.env,
-          VITE_API_BASE_URL: `${baseURL}/api/v1`,
+          VITE_API_BASE_URL: `${apiBaseURL}/api/v1`,
           VITE_BIDDING_WS_URL: "ws://127.0.0.1:18082",
         },
-    },
+      },
+    ],
   projects: [
     {
       name: "chromium",

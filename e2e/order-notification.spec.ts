@@ -1,9 +1,5 @@
 import { expect, test } from "playwright/test";
-import { mockOrderAndNotificationApi, notificationId, orderId } from "./fixtures/api";
-
-test.beforeEach(async ({ page }) => {
-  await mockOrderAndNotificationApi(page);
-});
+import { notificationId, orderId } from "./fixtures/api";
 
 test("orders page renders API-backed order and notification summaries", async ({ page }) => {
   await page.goto("/orders");

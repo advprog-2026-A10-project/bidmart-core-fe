@@ -2,10 +2,10 @@ import { expect, test } from "playwright/test";
 
 const placeholderRoutes = [
   { path: "/catalog", heading: "Catalog" },
-  { path: "/seller/listings", heading: "Listings" },
+  { path: "/seller/listings", heading: "My Listings" },
   { path: "/wallet", heading: "Wallet" },
-  { path: "/wallet/topup", heading: "Wallet Topup" },
-  { path: "/wallet/withdraw", heading: "Wallet Withdraw" },
+  { path: "/wallet/topup", heading: "Top Up Wallet" },
+  { path: "/wallet/withdraw", heading: "Withdraw Balance" },
 ];
 
 for (const route of placeholderRoutes) {
