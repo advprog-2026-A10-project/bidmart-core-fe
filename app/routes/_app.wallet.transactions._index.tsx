@@ -1,5 +1,5 @@
-import { WalletTransactionsDetailPage } from "~/modules/wallet/presentation";
+import { WalletTransactionsPage } from "~/modules/wallet/presentation";
 
-export default function WalletTransactionsDetailRoute() {
-  return <WalletTransactionsDetailPage />;
+export default function WalletTransactionsRoute() {
+  return <WalletTransactionsPage />;
 }

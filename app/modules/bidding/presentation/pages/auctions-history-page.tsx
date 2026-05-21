@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import { Link, useParams } from "react-router";
 
+import { apiClient } from "~/shared/infrastructure/http/api-client";
 import { Badge } from "~/shared/components/ui/badge";
 import { Button } from "~/shared/components/ui/button";
 import {
@@ -31,19 +33,66 @@ import {
   TableHeader,
   TableRow,
 } from "~/shared/components/ui/table";
+import { startAuctionRealtimeSocket } from "../../infrastructure/realtime/auction-websocket";
 import { CountdownTimer } from "../components/countdown-timer";
-import {
-  type AuctionDetail,
-  type AuctionStatus,
-  type BidHistoryEntry,
-  BIDDING_MOCK_PAYLOADS,
-} from "./constant";
+import { type AuctionDetail, type AuctionStatus, type BidHistoryEntry } from "./constant";
 
 const AUCTION_HISTORY_QUERY_KEY = "auction-history";
 
-function delay(ms: number) {
-  return new Promise((resolve) => globalThis.setTimeout(resolve, ms));
-}
+type AuctionDetailApiResponse = {
+  id: string;
+  listingId: string;
+  sellerId: string;
+  sellerName: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  startPrice: number;
+  currentPrice: number;
+  reservePrice: number | null;
+  bidIncrement: number;
+  bidCount: number;
+  status: AuctionStatus;
+  winnerId: string | null;
+  winnerName: string | null;
+  startsAt: string;
+  endsAt: string;
+  originalEndsAt: string;
+  extensionCount: number;
+  createdAt: string;
+  highestBidderAlias?: string | null;
+  myLatestBid?: number | null;
+};
+
+type BidHistoryEntryApiResponse = {
+  id: string;
+  auctionId: string;
+  bidderId: string;
+  bidderName: string;
+  amount: number;
+  status: "LEADING" | "OUTBID";
+  acceptedAt: string;
+  receivedSequence: number;
+  isMyBid: boolean;
+};
+
+type AuctionHistoryApiResponse = {
+  auction: AuctionDetailApiResponse;
+  bids: BidHistoryEntryApiResponse[];
+  ordering: {
+    primary: string;
+    secondary: string;
+  };
+};
+
+type AuctionHistoryQueryData = {
+  auction: AuctionDetail;
+  bids: BidHistoryEntry[];
+  ordering: {
+    primary: string;
+    secondary: string;
+  };
+};
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("id-ID", {
@@ -77,6 +126,27 @@ function truncateId(value: string) {
   return `${value.slice(0, 8)}...${value.slice(-4)}`;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function extractAuctionSnapshotPayload(payload: unknown): AuctionDetailApiResponse | null {
+  if (
+    isRecord(payload) &&
+    typeof payload.id === "string" &&
+    typeof payload.listingId === "string"
+  ) {
+    return payload as AuctionDetailApiResponse;
+  }
+  if (isRecord(payload) && isRecord(payload.auction)) {
+    const nested = payload.auction;
+    if (typeof nested.id === "string" && typeof nested.listingId === "string") {
+      return nested as AuctionDetailApiResponse;
+    }
+  }
+  return null;
+}
+
 function sortBidHistory(bids: BidHistoryEntry[]) {
   return [...bids].sort((left, right) => {
     const acceptedAtDifference =
@@ -90,30 +160,47 @@ function sortBidHistory(bids: BidHistoryEntry[]) {
   });
 }
 
-function getAuctionHistoryMock(auctionId: string) {
-  const basePayload = BIDDING_MOCK_PAYLOADS.getAuctionHistory.response;
-  const baseAuction = basePayload.auction;
-
-  let auction: AuctionDetail;
-
-  if (!auctionId || auctionId === baseAuction.id) {
-    auction = { ...baseAuction };
-  } else {
-    auction = {
-      ...baseAuction,
-      id: auctionId,
-      listingId: `listing-${auctionId}`,
-      title: `Auction Lot ${auctionId.toUpperCase()}`,
-    } satisfies AuctionDetail;
-  }
-
+function mapAuctionApiToDomain(raw: AuctionDetailApiResponse): AuctionDetail {
   return {
-    auction,
-    bids: basePayload.bids.map((bid) => ({
-      ...bid,
-      auctionId: auction.id,
-    })),
-    ordering: basePayload.ordering,
+    id: raw.id,
+    listingId: raw.listingId,
+    sellerId: raw.sellerId,
+    sellerName: raw.sellerName,
+    title: raw.title,
+    description: raw.description,
+    imageUrl: raw.imageUrl,
+    startPrice: raw.startPrice,
+    currentPrice: raw.currentPrice,
+    reservePrice: raw.reservePrice,
+    bidIncrement: raw.bidIncrement,
+    bidCount: raw.bidCount,
+    status: raw.status,
+    winnerId: raw.winnerId,
+    winnerName: raw.winnerName,
+    startsAt: raw.startsAt,
+    endsAt: raw.endsAt,
+    originalEndsAt: raw.originalEndsAt,
+    extensionCount: raw.extensionCount,
+    createdAt: raw.createdAt,
+    watchersCount: 0,
+    highestBidderAlias: raw.highestBidderAlias ?? "No bids yet",
+    myLatestBid: raw.myLatestBid ?? null,
+    currency: "IDR",
+  };
+}
+
+function mapBidApiToDomain(raw: BidHistoryEntryApiResponse): BidHistoryEntry {
+  return {
+    id: raw.id,
+    auctionId: raw.auctionId,
+    bidderId: raw.bidderId,
+    bidderAlias: raw.bidderName,
+    amount: raw.amount,
+    placedAt: raw.acceptedAt,
+    acceptedAt: raw.acceptedAt,
+    receivedSequence: raw.receivedSequence,
+    status: raw.status,
+    isMyBid: raw.isMyBid,
   };
 }
 
@@ -232,13 +319,18 @@ function HistorySkeleton() {
 
 export default function AuctionsHistoryPage() {
   const params = useParams();
-  const auctionId = params.auctionId ?? BIDDING_MOCK_PAYLOADS.mockAuction.id;
+  const auctionId = params.auctionId ?? "";
+  const queryClient = useQueryClient();
 
   const historyQuery = useQuery({
     queryKey: [AUCTION_HISTORY_QUERY_KEY, auctionId],
     queryFn: async () => {
-      await delay(300);
-      return getAuctionHistoryMock(auctionId);
+      const raw = await apiClient.get<AuctionHistoryApiResponse>(`/auctions/${auctionId}/history`);
+      return {
+        auction: mapAuctionApiToDomain(raw.auction),
+        bids: raw.bids.map((bid) => mapBidApiToDomain(bid)),
+        ordering: raw.ordering,
+      };
     },
     select: (payload) => ({
       ...payload,
@@ -246,6 +338,45 @@ export default function AuctionsHistoryPage() {
     }),
     enabled: Boolean(auctionId),
   });
+
+  useEffect(() => {
+    if (!auctionId) {
+      return;
+    }
+
+    const key = [AUCTION_HISTORY_QUERY_KEY, auctionId] as const;
+    return startAuctionRealtimeSocket({
+      auctionId,
+      onEvent: (event) => {
+        if (event.type === "snapshot") {
+          const snapshot = extractAuctionSnapshotPayload(event.payload);
+          if (!snapshot) {
+            return;
+          }
+
+          queryClient.setQueryData<AuctionHistoryQueryData>(key, (current) => {
+            if (!current) {
+              return current;
+            }
+
+            return {
+              ...current,
+              auction: mapAuctionApiToDomain(snapshot),
+            };
+          });
+          return;
+        }
+
+        if (
+          event.type === "bidPlaced" ||
+          event.type === "auctionExtended" ||
+          event.type === "finalized"
+        ) {
+          void queryClient.invalidateQueries({ queryKey: key });
+        }
+      },
+    });
+  }, [auctionId, queryClient]);
 
   if (historyQuery.isLoading) {
     return <HistorySkeleton />;
@@ -289,6 +420,7 @@ export default function AuctionsHistoryPage() {
             Ordered by <span className="text-foreground font-medium">server acceptance time</span>{" "}
             and then by <span className="text-foreground font-medium">receipt sequence</span> so
             bids that arrive almost at the same time still render in a fair and deterministic order.
+            This page stays in sync with the live auction stream.
           </p>
         </div>
 
@@ -389,8 +521,7 @@ export default function AuctionsHistoryPage() {
           <CardHeader>
             <CardTitle>Ordering rules</CardTitle>
             <CardDescription>
-              This mock is shaped like the future backend response so the page can move to real data
-              without changing the UI contract.
+              The sequence is provided by backend so tie-break behavior remains deterministic.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">

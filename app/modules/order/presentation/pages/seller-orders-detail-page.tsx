@@ -73,11 +73,11 @@ export default function SellerOrdersDetailPage() {
   return (
     <div className="container mx-auto space-y-6 px-4 py-8">
       <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Seller portal</p>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">{order.lot}</h1>
+        <p className="text-muted-foreground text-xs tracking-[0.3em] uppercase">Seller portal</p>
+        <h1 className="text-foreground text-3xl font-bold tracking-tight">{order.lot}</h1>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline">{order.status}</Badge>
-          <span className="text-sm text-muted-foreground">Order #{order.id}</span>
+          <span className="text-muted-foreground text-sm">Order #{order.id}</span>
         </div>
       </div>
 
@@ -88,29 +88,29 @@ export default function SellerOrdersDetailPage() {
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div>
-            <p className="text-xs text-muted-foreground">Buyer</p>
+            <p className="text-muted-foreground text-xs">Buyer</p>
             <p className="text-sm font-medium">{order.buyerId}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Seller</p>
+            <p className="text-muted-foreground text-xs">Seller</p>
             <p className="text-sm font-medium">{order.sellerId}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Stage</p>
+            <p className="text-muted-foreground text-xs">Stage</p>
             <p className="text-sm font-medium">{order.stage}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="text-muted-foreground text-xs">Total</p>
             <p className="text-sm font-medium">
               {order.total} {order.currency}
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Created at</p>
+            <p className="text-muted-foreground text-xs">Created at</p>
             <p className="text-sm font-medium">{formatTimestamp(order.createdAt)}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Updated at</p>
+            <p className="text-muted-foreground text-xs">Updated at</p>
             <p className="text-sm font-medium">{formatTimestamp(order.updatedAt)}</p>
           </div>
         </CardContent>

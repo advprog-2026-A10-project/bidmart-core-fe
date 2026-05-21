@@ -11,7 +11,7 @@ export class NotificationApiRepository implements INotificationRepository {
   private readonly basePath = "/notifications";
 
   async listNotifications(params: {
-    userId: string;
+    userId?: string;
     limit?: number;
     unreadOnly?: boolean;
   }): Promise<Notification[]> {
@@ -31,7 +31,7 @@ export class NotificationApiRepository implements INotificationRepository {
     return NotificationApiMapper.toDomain(raw);
   }
 
-  async markAsRead(params: { id: string; actorId: string }): Promise<void> {
+  async markAsRead(params: { id: string; actorId?: string }): Promise<void> {
     await apiClient.patch(`${this.basePath}/${params.id}/read`, { actorId: params.actorId });
   }
 

@@ -17,6 +17,7 @@ import { Input } from "~/shared/components/ui/input";
 
 type BidFormValues = {
   amount: number;
+  maxAmount?: number;
 };
 
 type BidFormProps = {
@@ -34,24 +35,34 @@ export function BidForm({
 }: BidFormProps) {
   const minimumAllowed = currentBid + minIncrement;
 
-  const schema = z.object({
-    amount: z.coerce
-      .number({ message: "Masukkan nominal bid yang valid." })
-      .finite("Masukkan nominal bid yang valid.")
-      .refine((value) => value >= minimumAllowed, {
-        message: `Bid minimum adalah Rp${minimumAllowed.toLocaleString("id-ID")}.`,
-      }),
-  });
+  const schema = z
+    .object({
+      amount: z
+        .number({ message: "Masukkan nominal bid yang valid." })
+        .finite("Masukkan nominal bid yang valid.")
+        .refine((value) => value >= minimumAllowed, {
+          message: `Bid minimum adalah Rp${minimumAllowed.toLocaleString("id-ID")}.`,
+        }),
+      maxAmount: z
+        .number({ message: "Masukkan nominal proxy max yang valid." })
+        .positive("Proxy max harus lebih besar dari 0.")
+        .optional(),
+    })
+    .refine((values) => values.maxAmount === undefined || values.maxAmount >= values.amount, {
+      message: "Proxy max harus lebih besar atau sama dengan nominal bid.",
+      path: ["maxAmount"],
+    });
 
   const form = useForm<BidFormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       amount: minimumAllowed,
+      maxAmount: undefined,
     },
   });
 
   useEffect(() => {
-    form.reset({ amount: minimumAllowed });
+    form.reset({ amount: minimumAllowed, maxAmount: undefined });
   }, [form, minimumAllowed]);
 
   return (
@@ -71,13 +82,42 @@ export function BidForm({
                   step={minIncrement}
                   inputMode="numeric"
                   placeholder="Masukkan nominal bid"
-                  onChange={(event) => field.onChange(event.target.value)}
+                  onChange={(event) => field.onChange(Number(event.target.value))}
                 />
               </FormControl>
               <FormDescription>
                 Bid berikutnya minimal Rp{minimumAllowed.toLocaleString("id-ID")} dan harus
                 mengikuti increment Rp{minIncrement.toLocaleString("id-ID")}. Jika bid masuk di 2
                 menit terakhir, waktu lelang akan otomatis bertambah 2 menit.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="maxAmount"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Proxy max (opsional)</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  type="number"
+                  min={minimumAllowed}
+                  step={minIncrement}
+                  inputMode="numeric"
+                  placeholder="Contoh: 20000000"
+                  value={field.value ?? ""}
+                  onChange={(event) => {
+                    const nextValue = event.target.value.trim();
+                    field.onChange(nextValue === "" ? undefined : Number(nextValue));
+                  }}
+                />
+              </FormControl>
+              <FormDescription>
+                Jika diisi, sistem akan melakukan auto-bid sampai batas ini saat ada penawaran lain.
               </FormDescription>
               <FormMessage />
             </FormItem>

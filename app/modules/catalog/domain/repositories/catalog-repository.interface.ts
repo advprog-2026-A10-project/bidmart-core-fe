@@ -1,4 +1,16 @@
-import type { Catalog } from "../entities/catalog";
+import type {
+  BrowseCatalogDTO,
+  BrowseCategoryPathDTO,
+  CreateSellerListingDTO,
+  GetListingDetailDTO,
+  PaginationDTO,
+  SellerListingActionDTO,
+  UpdateSellerListingDTO,
+} from "~/modules/catalog/application/dtos/catalog.dto";
+import type {
+  CatalogListingDetail,
+  PaginatedCatalogListings,
+} from "~/modules/catalog/domain/entities/catalog";
 
 /**
  * ICatalogRepository — Repository Interface (Port)
@@ -7,7 +19,14 @@ import type { Catalog } from "../entities/catalog";
  * abstraction, not on any concrete implementation (DIP).
  */
 export interface ICatalogRepository {
-  // TODO: add repository methods matching your use-cases
-  // Example:
-  // getById(params: { id: string }): Promise<Catalog>;
+  browseCatalog(params: BrowseCatalogDTO): Promise<PaginatedCatalogListings>;
+  browseCategoryPath(params: BrowseCategoryPathDTO): Promise<PaginatedCatalogListings>;
+  getPublicListing(params: GetListingDetailDTO): Promise<CatalogListingDetail>;
+
+  listMyListings(params: PaginationDTO): Promise<PaginatedCatalogListings>;
+  getMyListing(params: GetListingDetailDTO): Promise<CatalogListingDetail>;
+  createListing(params: CreateSellerListingDTO): Promise<CatalogListingDetail>;
+  updateListing(params: UpdateSellerListingDTO): Promise<CatalogListingDetail>;
+  cancelListing(params: SellerListingActionDTO): Promise<void>;
+  publishListing(params: SellerListingActionDTO): Promise<CatalogListingDetail>;
 }

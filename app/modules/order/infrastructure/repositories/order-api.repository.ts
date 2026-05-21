@@ -9,7 +9,7 @@ export class OrderApiRepository implements IOrderRepository {
   private readonly sellerBasePath = "/seller/orders";
 
   async listOrders(params: {
-    id: string;
+    id?: string;
     role: "buyer" | "seller";
     stage?: string;
     limit?: number;
@@ -32,11 +32,18 @@ export class OrderApiRepository implements IOrderRepository {
     return OrderApiMapper.toDomain(raw);
   }
 
-  async confirmOrder(params: { orderId: string; actorId: string }): Promise<void> {
-    await apiClient.post(`${this.basePath}/${params.orderId}/confirm`, { actor_id: params.actorId });
+  async confirmOrder(params: { orderId: string; actorId?: string }): Promise<void> {
+    await apiClient.post(`${this.basePath}/${params.orderId}/confirm`, {
+      actor_id: params.actorId,
+    });
   }
 
-  async createDispute(params: { orderId: string; reporterId: string; reason: string; details?: string }): Promise<void> {
+  async createDispute(params: {
+    orderId: string;
+    reporterId?: string;
+    reason: string;
+    details?: string;
+  }): Promise<void> {
     await apiClient.post(`${this.basePath}/${params.orderId}/dispute/new`, {
       reporter_id: params.reporterId,
       reason: params.reason,
@@ -44,14 +51,22 @@ export class OrderApiRepository implements IOrderRepository {
     });
   }
 
-  async updateShippingStatus(params: { orderId: string; status: string; tracking?: string }): Promise<void> {
+  async updateShippingStatus(params: {
+    orderId: string;
+    status: string;
+    tracking?: string;
+  }): Promise<void> {
     await apiClient.patch(`${this.sellerBasePath}/${params.orderId}/shipping`, {
       status: params.status,
       tracking: params.tracking,
     });
   }
 
-  async recordTimelineEvent(params: { orderId: string; event: string; metadata?: Record<string, unknown> }): Promise<void> {
+  async recordTimelineEvent(params: {
+    orderId: string;
+    event: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<void> {
     await apiClient.post(`${this.basePath}/${params.orderId}/events`, {
       event: params.event,
       metadata: params.metadata,

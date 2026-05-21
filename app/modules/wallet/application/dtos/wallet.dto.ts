@@ -1,9 +1,22 @@
-/**
- * Input DTOs — define the shape of data flowing into use-cases.
- * Use cases receive these from the presentation layer.
- */
+export type ListWalletTransactionsDTO = {
+  page: number;
+  pageSize: number;
+};
 
-// TODO: define input DTOs for each use-case, e.g.:
-// export type GetWalletDTO = {
-//   id: string;
-// };
+export type GetWalletTransactionByIdDTO = {
+  transactionId: string;
+};
+
+export type TopupWalletDTO = {
+  amountCents: number;
+  method: string;
+};
+
+export type WithdrawWalletDTO = {
+  amountCents: number;
+  bankAccount: {
+    bank: string;
+    accountNo: string;
+    name: string;
+  };
+};

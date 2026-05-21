@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 
+import { apiClient } from "~/shared/infrastructure/http/api-client";
 import { Badge } from "~/shared/components/ui/badge";
 import { Button } from "~/shared/components/ui/button";
 import {
@@ -34,7 +35,6 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "~/shared/components/ui/tabs";
 import {
   type AuctionStatus,
-  BIDDING_MOCK_PAYLOADS,
   type MyBidFilterValue,
   type MyBidListItem,
   type MyBidStatus,
@@ -43,9 +43,42 @@ import {
 const MY_BIDS_QUERY_KEY = "my-bids";
 const VALID_FILTERS: MyBidFilterValue[] = ["all", "winning", "outbid", "won", "lost"];
 
-function delay(ms: number) {
-  return new Promise((resolve) => globalThis.setTimeout(resolve, ms));
-}
+type MyBidApiItem = {
+  auctionId: string;
+  listingId: string;
+  sellerId: string;
+  sellerName: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  startPrice: number;
+  currentPrice: number;
+  reservePrice: number | null;
+  bidIncrement: number;
+  bidCount: number;
+  auctionStatus: string;
+  myBidStatus: string;
+  winnerId: string | null;
+  winnerName: string | null;
+  startsAt: string;
+  endsAt: string;
+  originalEndsAt: string;
+  extensionCount: number;
+  highestBidderAlias: string | null;
+  myLatestBid: number;
+  lastBidAt: string;
+  isReserveMet: boolean;
+  currency: string;
+};
+
+type MyBidApiResponse = {
+  user: {
+    id: string;
+    name: string;
+  };
+  data: MyBidApiItem[];
+  summary: Record<MyBidFilterValue, number>;
+};
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("id-ID", {
@@ -75,49 +108,62 @@ function formatRelativeAuctionTime(value: string) {
   return diff >= 0 ? `Ends in ${days}d` : `Ended ${days}d ago`;
 }
 
-function toFilterValue(status: MyBidStatus): Exclude<MyBidFilterValue, "all"> {
+function toAuctionStatus(status: string): AuctionStatus {
   switch (status) {
-    case "WINNING":
-      return "winning";
-    case "OUTBID":
-      return "outbid";
+    case "DRAFT":
+    case "SCHEDULED":
+    case "ACTIVE":
+    case "EXTENDED":
+    case "CLOSED":
     case "WON":
-      return "won";
-    case "LOST":
-      return "lost";
+    case "UNSOLD":
+      return status;
     default:
-      return "lost";
+      return "CLOSED";
   }
 }
 
-function sortMyBids(bids: MyBidListItem[]) {
-  return [...bids].sort((left, right) => {
-    const leftLive = left.auctionStatus === "ACTIVE" || left.auctionStatus === "EXTENDED";
-    const rightLive = right.auctionStatus === "ACTIVE" || right.auctionStatus === "EXTENDED";
-
-    if (leftLive !== rightLive) {
-      return leftLive ? -1 : 1;
-    }
-
-    if (leftLive && rightLive) {
-      return new Date(left.endsAt).getTime() - new Date(right.endsAt).getTime();
-    }
-
-    return new Date(right.endsAt).getTime() - new Date(left.endsAt).getTime();
-  });
+function toMyBidStatus(status: string): MyBidStatus {
+  switch (status) {
+    case "WINNING":
+    case "OUTBID":
+    case "WON":
+    case "LOST":
+      return status;
+    default:
+      return "LOST";
+  }
 }
 
-function getMyBidsMock(status: MyBidFilterValue) {
-  const payload = BIDDING_MOCK_PAYLOADS.getMyBids.response;
-  const bids =
-    status === "all"
-      ? payload.bids
-      : payload.bids.filter((bid) => toFilterValue(bid.myBidStatus) === status);
-
+function mapMyBidApiItemToView(item: MyBidApiItem): MyBidListItem {
   return {
-    user: payload.user,
-    summary: payload.summary,
-    bids: sortMyBids(bids),
+    auctionId: item.auctionId,
+    listingId: item.listingId,
+    sellerId: item.sellerId,
+    sellerName: item.sellerName,
+    title: item.title,
+    description: item.description,
+    imageUrl:
+      item.imageUrl ||
+      "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=80",
+    startPrice: item.startPrice,
+    currentPrice: item.currentPrice,
+    reservePrice: item.reservePrice,
+    bidIncrement: item.bidIncrement,
+    bidCount: item.bidCount,
+    auctionStatus: toAuctionStatus(item.auctionStatus),
+    myBidStatus: toMyBidStatus(item.myBidStatus),
+    winnerId: item.winnerId,
+    winnerName: item.winnerName,
+    startsAt: item.startsAt,
+    endsAt: item.endsAt,
+    originalEndsAt: item.originalEndsAt,
+    extensionCount: item.extensionCount,
+    highestBidderAlias: item.highestBidderAlias ?? "No bids yet",
+    myLatestBid: item.myLatestBid,
+    lastBidAt: item.lastBidAt,
+    isReserveMet: item.isReserveMet,
+    currency: "IDR",
   };
 }
 
@@ -316,8 +362,7 @@ function EmptyState({ filter }: { filter: MyBidFilterValue }) {
         <div className="space-y-1">
           <h3 className="text-lg font-medium">No matching bids</h3>
           <p className="text-muted-foreground max-w-md text-sm">
-            We could not find {label} in the current mock dataset. When the backend is wired, this
-            state will automatically reflect real user history.
+            We could not find {label} for your account at the moment.
           </p>
         </div>
       </CardContent>
@@ -356,8 +401,13 @@ export default function BiddingPage() {
   const myBidsQuery = useQuery({
     queryKey: [MY_BIDS_QUERY_KEY, activeFilter],
     queryFn: async () => {
-      await delay(300);
-      return getMyBidsMock(activeFilter);
+      const query = activeFilter === "all" ? "" : `?status=${activeFilter}`;
+      const raw = await apiClient.get<MyBidApiResponse>(`/me/bids${query}`);
+      return {
+        user: raw.user,
+        summary: raw.summary,
+        bids: raw.data.map((item) => mapMyBidApiItemToView(item)),
+      };
     },
   });
 
@@ -444,7 +494,7 @@ export default function BiddingPage() {
             <CardHeader>
               <CardTitle>Bid history table</CardTitle>
               <CardDescription>
-                The route stays ready for TanStack Query integration with a future backend contract.
+                Data is loaded from backend and filtered by your current status tab.
               </CardDescription>
             </CardHeader>
             <CardContent>

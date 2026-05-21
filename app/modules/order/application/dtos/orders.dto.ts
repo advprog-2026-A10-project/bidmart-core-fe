@@ -1,7 +1,7 @@
 import type { OrderStage } from "~/modules/order/domain/entities/order";
 
 export type ListOrdersDTO = {
-  userId: string;
+  userId?: string;
   role: "buyer" | "seller";
   stage?: OrderStage;
   limit?: number;
@@ -14,12 +14,12 @@ export type GetOrderDTO = {
 
 export type ConfirmOrderDTO = {
   orderId: string;
-  actorId: string;
+  actorId?: string;
 };
 
 export type CreateDisputeDTO = {
   orderId: string;
-  reporterId: string;
+  reporterId?: string;
   reason: string;
   details?: string;
 };

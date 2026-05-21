@@ -27,7 +27,6 @@ import {
 } from "~/shared/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "~/shared/components/ui/tabs";
 
-const CURRENT_SELLER_ID = "seller-adr";
 const QUERY_KEY_SELLER_ORDERS = "seller-orders-page-orders";
 
 const stageFilters: Array<{ value: "all" | OrderStage; label: string }> = [
@@ -46,7 +45,6 @@ export default function SellerOrdersPage() {
     queryKey: [QUERY_KEY_SELLER_ORDERS, selectedStage],
     queryFn: () =>
       useCases.listOrders.execute({
-        userId: CURRENT_SELLER_ID,
         role: "seller",
         stage: selectedStage === "all" ? undefined : selectedStage,
       }),
@@ -63,9 +61,9 @@ export default function SellerOrdersPage() {
     <div className="container mx-auto space-y-6 px-4 py-8">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Seller portal</p>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Seller orders</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-xs tracking-[0.3em] uppercase">Seller portal</p>
+          <h1 className="text-foreground text-3xl font-bold tracking-tight">Seller orders</h1>
+          <p className="text-muted-foreground text-sm">
             Monitor all buyer orders connected to your listings.
           </p>
         </div>
@@ -78,7 +76,10 @@ export default function SellerOrdersPage() {
         <CardHeader className="space-y-3">
           <CardTitle>Order board</CardTitle>
           <CardDescription>Source: `/seller/orders` with optional stage filter.</CardDescription>
-          <Tabs value={selectedStage} onValueChange={(value) => setSelectedStage(value as "all" | OrderStage)}>
+          <Tabs
+            value={selectedStage}
+            onValueChange={(value) => setSelectedStage(value as "all" | OrderStage)}
+          >
             <TabsList>
               {stageFilters.map((filter) => (
                 <TabsTrigger key={filter.value} value={filter.value}>
@@ -115,7 +116,7 @@ export default function SellerOrdersPage() {
 
               {ordersQuery.isError ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-sm text-destructive">
+                  <TableCell colSpan={6} className="text-destructive text-sm">
                     {ordersLoadErrorMessage}
                   </TableCell>
                 </TableRow>
@@ -123,7 +124,7 @@ export default function SellerOrdersPage() {
 
               {!ordersQuery.isLoading && !ordersQuery.isError && orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-sm text-muted-foreground">
+                  <TableCell colSpan={6} className="text-muted-foreground text-sm">
                     No orders found for this filter.
                   </TableCell>
                 </TableRow>
@@ -132,15 +133,17 @@ export default function SellerOrdersPage() {
               {orders.map((order: Order) => (
                 <TableRow key={order.id}>
                   <TableCell className="space-y-1">
-                    <p className="text-sm font-semibold text-foreground">{order.lot}</p>
-                    <p className="text-xs text-muted-foreground">{order.id}</p>
+                    <p className="text-foreground text-sm font-semibold">{order.lot}</p>
+                    <p className="text-muted-foreground text-xs">{order.id}</p>
                   </TableCell>
                   <TableCell>{order.buyerId}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{order.status}</Badge>
                   </TableCell>
                   <TableCell className="font-semibold">{order.total}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{order.lastActivity}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">
+                    {order.lastActivity}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-2">
                       <Button asChild variant="ghost" size="sm">

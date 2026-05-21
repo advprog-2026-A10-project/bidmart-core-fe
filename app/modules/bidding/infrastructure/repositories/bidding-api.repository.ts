@@ -13,12 +13,11 @@ import { BiddingApiMapper } from "../api/bidding-api.mapper";
  * All responses are validated against Zod schemas at this boundary (fail-fast).
  */
 export class BiddingApiRepository implements IBiddingRepository {
-  private readonly basePath = "/biddings"; // TODO: update base path
+  private readonly basePath = "/biddings";
 
-  // TODO: implement interface methods, e.g.:
-  // async getById(params: { id: string }): Promise<Bidding> {
-  //   const raw = await apiClient.get<unknown>(`${this.basePath}/${params.id}`);
-  //   const validated = biddingApiSchema.parse(raw);
-  //   return BiddingApiMapper.toDomain(validated);
-  // }
+  async getById(params: { id: string }): Promise<Bidding> {
+    const raw = await apiClient.get<unknown>(`${this.basePath}/${params.id}`);
+    const validated = biddingApiSchema.parse(raw);
+    return BiddingApiMapper.toDomain(validated);
+  }
 }

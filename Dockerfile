@@ -9,6 +9,12 @@ RUN if [ -f pnpm-lock.yaml ]; then corepack enable && pnpm install --frozen-lock
 
 FROM deps AS builder
 WORKDIR /app
+ARG VITE_API_BASE_URL=""
+ARG VITE_BIDDING_WS_URL=""
+ARG VITE_AUTH_LOGIN_URL=""
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_BIDDING_WS_URL=$VITE_BIDDING_WS_URL
+ENV VITE_AUTH_LOGIN_URL=$VITE_AUTH_LOGIN_URL
 COPY . .
 RUN if [ -f pnpm-lock.yaml ]; then corepack enable && pnpm run build; \
     elif [ -f yarn.lock ]; then yarn build; \

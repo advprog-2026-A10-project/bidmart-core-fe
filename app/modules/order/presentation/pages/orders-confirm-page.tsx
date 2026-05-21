@@ -17,7 +17,6 @@ import {
 } from "~/shared/components/ui/card";
 import { Skeleton } from "~/shared/components/ui/skeleton";
 
-const CURRENT_USER_ID = "buyer-vel";
 const QUERY_KEY_ORDER_DETAIL = "order-detail";
 
 function formatTimestamp(iso: string) {
@@ -43,7 +42,6 @@ export default function OrdersConfirmPage() {
     mutationFn: () =>
       useCases.confirmOrder.execute({
         orderId,
-        actorId: CURRENT_USER_ID,
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [QUERY_KEY_ORDER_DETAIL, orderId] });
@@ -92,9 +90,9 @@ export default function OrdersConfirmPage() {
   return (
     <div className="container mx-auto space-y-6 px-4 py-8">
       <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Buyer action</p>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Confirm order receipt</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-xs tracking-[0.3em] uppercase">Buyer action</p>
+        <h1 className="text-foreground text-3xl font-bold tracking-tight">Confirm order receipt</h1>
+        <p className="text-muted-foreground text-sm">
           This action triggers `POST /orders/:orderId/confirm`.
         </p>
       </div>
@@ -107,19 +105,19 @@ export default function OrdersConfirmPage() {
         <CardContent className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <p className="text-xs text-muted-foreground">Status</p>
+              <p className="text-muted-foreground text-xs">Status</p>
               <Badge variant="outline">{order.status}</Badge>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Total</p>
+              <p className="text-muted-foreground text-xs">Total</p>
               <p className="text-sm font-medium">{order.total}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Seller</p>
+              <p className="text-muted-foreground text-xs">Seller</p>
               <p className="text-sm font-medium">{order.sellerId}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Updated at</p>
+              <p className="text-muted-foreground text-xs">Updated at</p>
               <p className="text-sm font-medium">{formatTimestamp(order.updatedAt)}</p>
             </div>
           </div>
@@ -131,7 +129,7 @@ export default function OrdersConfirmPage() {
           ) : null}
 
           {confirmMutation.isError ? (
-            <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p className="border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm">
               {confirmErrorMessage}
             </p>
           ) : null}

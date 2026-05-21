@@ -3,7 +3,7 @@ import type { Order, OrderStage } from "../entities/order";
 
 export interface IOrderRepository {
   listOrders(params: {
-    id: string;
+    id?: string;
     role: "buyer" | "seller";
     stage?: OrderStage;
     limit?: number;
@@ -12,11 +12,11 @@ export interface IOrderRepository {
 
   getOrderById(params: { id: string }): Promise<Order>;
 
-  confirmOrder(params: { orderId: string; actorId: string }): Promise<void>;
+  confirmOrder(params: { orderId: string; actorId?: string }): Promise<void>;
 
   createDispute(params: {
     orderId: string;
-    reporterId: string;
+    reporterId?: string;
     reason: string;
     details?: string;
   }): Promise<void>;
@@ -36,14 +36,14 @@ export interface IOrderRepository {
 
 export interface INotificationRepository {
   listNotifications(params: {
-    userId: string;
+    userId?: string;
     limit?: number;
     unreadOnly?: boolean;
   }): Promise<Notification[]>;
 
   getNotificationById(params: { id: string }): Promise<Notification>;
 
-  markAsRead(params: { id: string; actorId: string }): Promise<void>;
+  markAsRead(params: { id: string; actorId?: string }): Promise<void>;
 
   publishEvent(event: NotificationEventPayload): Promise<void>;
 }

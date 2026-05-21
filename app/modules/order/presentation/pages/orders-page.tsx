@@ -49,11 +49,13 @@ const stageFilters = [
 
 type OrderStage = (typeof stageFilters)[number]["value"];
 
-const CURRENT_USER_ID = "buyer-vel";
 const QUERY_KEY_ORDERS = "orders-page-orders";
 const QUERY_KEY_NOTIFICATIONS = "orders-page-notifications";
 
-const badgeVariantByStatus: Record<string, "default" | "secondary" | "outline" | "destructive" | "ghost"> = {
+const badgeVariantByStatus: Record<
+  string,
+  "default" | "secondary" | "outline" | "destructive" | "ghost"
+> = {
   "Awaiting Payment": "outline",
   "In Transit": "default",
   "Needs Confirmation": "secondary",
@@ -62,7 +64,19 @@ const badgeVariantByStatus: Record<string, "default" | "secondary" | "outline" |
   "Dispute Alert": "destructive",
 };
 
-const notificationToneVariant: Record<Notification["type"], "default" | "secondary" | "outline" | "destructive" | "ghost"> = {
+const notificationToneVariant: Record<
+  Notification["type"],
+  "default" | "secondary" | "outline" | "destructive" | "ghost"
+> = {
+  BID_OUTBID: "secondary",
+  AUCTION_WON: "default",
+  AUCTION_LOST: "outline",
+  ORDER_SHIPPED: "outline",
+  ORDER_DELIVERED: "ghost",
+  PAYMENT_RECEIVED: "default",
+  DISPUTE_OPENED: "destructive",
+  DISPUTE_RESOLVED: "ghost",
+  AUCTION_EXTENDED: "secondary",
   BidPlaced: "secondary",
   WinnerDetermined: "default",
   OrderUpdate: "outline",
@@ -84,7 +98,6 @@ export default function OrdersPage() {
     queryKey: [QUERY_KEY_ORDERS, selectedStage],
     queryFn: () =>
       useCases.listOrders.execute({
-        userId: CURRENT_USER_ID,
         role: "buyer",
         stage: selectedStage,
       }),
@@ -94,7 +107,6 @@ export default function OrdersPage() {
     queryKey: [QUERY_KEY_NOTIFICATIONS],
     queryFn: () =>
       useCases.listNotifications.execute({
-        userId: CURRENT_USER_ID,
         limit: 10,
       }),
   });
@@ -128,9 +140,11 @@ export default function OrdersPage() {
     <div className="container mx-auto space-y-6 px-4 py-8">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Order center</p>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Orders and notifications</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-xs tracking-[0.4em] uppercase">Order center</p>
+          <h1 className="text-foreground text-3xl font-bold tracking-tight">
+            Orders and notifications
+          </h1>
+          <p className="text-muted-foreground text-sm">
             Track order lifecycle and recent notification events from the live API contract.
           </p>
         </div>
@@ -167,7 +181,10 @@ export default function OrdersPage() {
               <Badge variant="outline">{selectedStage.toUpperCase()}</Badge>
             </div>
             <CardDescription>{stageDescription}</CardDescription>
-            <Tabs value={selectedStage} onValueChange={(value) => setSelectedStage(value as OrderStage)}>
+            <Tabs
+              value={selectedStage}
+              onValueChange={(value) => setSelectedStage(value as OrderStage)}
+            >
               <TabsList>
                 {stageFilters.map((filter) => (
                   <TabsTrigger key={filter.value} value={filter.value}>
@@ -204,7 +221,7 @@ export default function OrdersPage() {
 
                 {ordersQuery.isError ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-sm text-destructive">
+                    <TableCell colSpan={6} className="text-destructive text-sm">
                       Unable to load orders for this stage right now.
                     </TableCell>
                   </TableRow>
@@ -212,7 +229,7 @@ export default function OrdersPage() {
 
                 {!ordersQuery.isLoading && !ordersQuery.isError && orders.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-sm text-muted-foreground">
+                    <TableCell colSpan={6} className="text-muted-foreground text-sm">
                       No orders available for the selected stage.
                     </TableCell>
                   </TableRow>
@@ -221,8 +238,8 @@ export default function OrdersPage() {
                 {orders.map((order: Order) => (
                   <TableRow key={order.id}>
                     <TableCell className="space-y-1">
-                      <p className="text-sm font-semibold text-foreground">{order.lot}</p>
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <p className="text-foreground text-sm font-semibold">{order.lot}</p>
+                      <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
                         <span>{order.id}</span>
                         {order.tags.map((tag) => (
                           <Badge key={tag} variant="ghost">
@@ -233,13 +250,17 @@ export default function OrdersPage() {
                     </TableCell>
                     <TableCell>
                       <p className="text-sm font-medium">{order.sellerId}</p>
-                      <p className="text-xs text-muted-foreground">Seller account</p>
+                      <p className="text-muted-foreground text-xs">Seller account</p>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={badgeVariantByStatus[order.status] ?? "outline"}>{order.status}</Badge>
+                      <Badge variant={badgeVariantByStatus[order.status] ?? "outline"}>
+                        {order.status}
+                      </Badge>
                     </TableCell>
                     <TableCell className="font-semibold">{order.total}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{order.lastActivity}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs">
+                      {order.lastActivity}
+                    </TableCell>
                     <TableCell>
                       <Button asChild variant="ghost" size="sm">
                         <Link to={`/orders/${order.id}`}>View</Link>
@@ -251,7 +272,7 @@ export default function OrdersPage() {
             </Table>
           </CardContent>
           <CardFooter className="flex items-center justify-between gap-2">
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Data source: `/orders` filtered by stage and current buyer.
             </p>
             <Button asChild size="sm" variant="outline">
@@ -266,7 +287,7 @@ export default function OrdersPage() {
             <CardDescription>Latest events from `/notifications`.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[340px] rounded-2xl border border-border">
+            <ScrollArea className="border-border h-[340px] rounded-2xl border">
               <div className="flex flex-col gap-3 p-4">
                 {notificationsQuery.isLoading ? (
                   <div className="space-y-2">
@@ -276,23 +297,27 @@ export default function OrdersPage() {
                 ) : null}
 
                 {notificationsQuery.isError ? (
-                  <p className="text-xs text-destructive">Unable to load recent notifications.</p>
+                  <p className="text-destructive text-xs">Unable to load recent notifications.</p>
                 ) : null}
 
-                {!notificationsQuery.isLoading && !notificationsQuery.isError && notifications.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">No notifications available yet.</p>
+                {!notificationsQuery.isLoading &&
+                !notificationsQuery.isError &&
+                notifications.length === 0 ? (
+                  <p className="text-muted-foreground text-xs">No notifications available yet.</p>
                 ) : null}
 
                 {notifications.map((event) => (
                   <div
                     key={event.id}
-                    className="flex flex-col gap-1 rounded-2xl border border-border/70 bg-muted/50 p-3"
+                    className="border-border/70 bg-muted/50 flex flex-col gap-1 rounded-2xl border p-3"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-foreground">{event.title}</p>
-                      <span className="text-xs text-muted-foreground">{formatTimestamp(event.createdAt)}</span>
+                      <p className="text-foreground text-sm font-semibold">{event.title}</p>
+                      <span className="text-muted-foreground text-xs">
+                        {formatTimestamp(event.createdAt)}
+                      </span>
                     </div>
-                    <p className="text-xs text-muted-foreground">{event.body}</p>
+                    <p className="text-muted-foreground text-xs">{event.body}</p>
                     <Badge variant={notificationToneVariant[event.type]}>{event.type}</Badge>
                   </div>
                 ))}
@@ -300,7 +325,7 @@ export default function OrdersPage() {
             </ScrollArea>
           </CardContent>
           <CardFooter className="flex items-center justify-between gap-2">
-            <p className="text-xs text-muted-foreground">Notification stream is now API-driven.</p>
+            <p className="text-muted-foreground text-xs">Notification stream is now API-driven.</p>
             <Button variant="ghost" size="sm" onClick={() => void notificationsQuery.refetch()}>
               Reload stream
             </Button>
