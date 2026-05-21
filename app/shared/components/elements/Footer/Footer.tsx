@@ -4,12 +4,7 @@ import { GavelIcon, GithubIcon, InstagramIcon, TwitterIcon } from "lucide-react"
 import { Separator } from "~/shared/components/ui/separator";
 
 const footerLinks = {
-  Platform: [
-    { label: "Catalog", href: "/catalog" },
-    { label: "How It Works", href: "/#how-it-works" },
-    { label: "Pricing", href: "/#pricing" },
-    { label: "FAQ", href: "/#faq" },
-  ],
+  Platform: [{ label: "Catalog", href: "/catalog" }],
   Buyers: [
     { label: "My Bids", href: "/me/bids" },
     { label: "Orders", href: "/orders" },
@@ -20,11 +15,6 @@ const footerLinks = {
     { label: "Create Listing", href: "/seller/listings/new" },
     { label: "My Listings", href: "/seller/listings" },
     { label: "Seller Orders", href: "/seller/orders" },
-  ],
-  Legal: [
-    { label: "Terms of Service", href: "/terms" },
-    { label: "Privacy Policy", href: "/privacy" },
-    { label: "Cookie Policy", href: "/cookies" },
   ],
 };
 
