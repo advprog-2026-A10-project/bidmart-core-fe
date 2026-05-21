@@ -1,3 +1,5 @@
+/* global console, process, URL */
+
 import http from "node:http";
 
 const host = process.env.E2E_API_HOST ?? "127.0.0.1";

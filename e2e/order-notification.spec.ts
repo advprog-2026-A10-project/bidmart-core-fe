@@ -24,7 +24,9 @@ test("notifications page supports unread filter and mark-as-read action", async 
   await expect(page.getByText("Unable to mark notification as read.")).toHaveCount(0);
 });
 
-test("order and notification detail routes render with mocked backend contracts", async ({ page }) => {
+test("order and notification detail routes render with mocked backend contracts", async ({
+  page,
+}) => {
   await page.goto(`/orders/${orderId}`);
   await expect(page.getByRole("heading", { name: "Banksy - Shredded Beauty" })).toBeVisible();
 
