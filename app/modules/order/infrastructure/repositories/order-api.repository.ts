@@ -61,15 +61,4 @@ export class OrderApiRepository implements IOrderRepository {
       tracking: params.tracking,
     });
   }
-
-  async recordTimelineEvent(params: {
-    orderId: string;
-    event: string;
-    metadata?: Record<string, unknown>;
-  }): Promise<void> {
-    await apiClient.post(`${this.basePath}/${params.orderId}/events`, {
-      event: params.event,
-      metadata: params.metadata,
-    });
-  }
 }

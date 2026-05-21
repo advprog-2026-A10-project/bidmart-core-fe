@@ -1,8 +1,5 @@
 import { apiClient } from "~/shared/infrastructure/http/api-client";
-import type {
-  Notification,
-  NotificationEventPayload,
-} from "~/modules/order/domain/entities/notification";
+import type { Notification } from "~/modules/order/domain/entities/notification";
 import type { INotificationRepository } from "~/modules/order/domain/repositories/order-repository.interface";
 import { NotificationApiMapper } from "../api/notification-api.mapper";
 import type { NotificationApiResponse } from "../api/schemas";
@@ -33,9 +30,5 @@ export class NotificationApiRepository implements INotificationRepository {
 
   async markAsRead(params: { id: string; actorId?: string }): Promise<void> {
     await apiClient.patch(`${this.basePath}/${params.id}/read`, { actorId: params.actorId });
-  }
-
-  async publishEvent(event: NotificationEventPayload): Promise<void> {
-    await apiClient.post("/events/notifications", event);
   }
 }

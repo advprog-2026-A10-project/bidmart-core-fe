@@ -6,7 +6,6 @@ import { GetOrderUseCase } from "~/modules/order/application/use-cases/get-order
 import { ListNotificationsUseCase } from "~/modules/order/application/use-cases/list-notifications.use-case";
 import { ListOrdersUseCase } from "~/modules/order/application/use-cases/list-orders.use-case";
 import { MarkNotificationReadUseCase } from "~/modules/order/application/use-cases/mark-notification-read.use-case";
-import { PublishNotificationEventUseCase } from "~/modules/order/application/use-cases/publish-notification-event.use-case";
 import { UpdateShippingStatusUseCase } from "~/modules/order/application/use-cases/update-shipping-status.use-case";
 import { GetNotificationUseCase } from "~/modules/order/application/use-cases/get-notification.use-case";
 
@@ -19,7 +18,6 @@ export type OrderUseCases = {
   listNotifications: ListNotificationsUseCase;
   getNotification: GetNotificationUseCase;
   markNotificationRead: MarkNotificationReadUseCase;
-  publishNotificationEvent: PublishNotificationEventUseCase;
 };
 
 export function createOrderUseCases(): OrderUseCases {
@@ -35,7 +33,6 @@ export function createOrderUseCases(): OrderUseCases {
     listNotifications: new ListNotificationsUseCase(notificationRepository),
     getNotification: new GetNotificationUseCase(notificationRepository),
     markNotificationRead: new MarkNotificationReadUseCase(notificationRepository),
-    publishNotificationEvent: new PublishNotificationEventUseCase(notificationRepository),
   };
 }
 

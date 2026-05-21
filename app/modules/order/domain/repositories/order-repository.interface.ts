@@ -1,4 +1,4 @@
-import type { Notification, NotificationEventPayload } from "../entities/notification";
+import type { Notification } from "../entities/notification";
 import type { Order, OrderStage } from "../entities/order";
 
 export interface IOrderRepository {
@@ -26,12 +26,6 @@ export interface IOrderRepository {
     status: string;
     tracking?: string;
   }): Promise<void>;
-
-  recordTimelineEvent(params: {
-    orderId: string;
-    event: string;
-    metadata?: Record<string, unknown>;
-  }): Promise<void>;
 }
 
 export interface INotificationRepository {
@@ -44,6 +38,4 @@ export interface INotificationRepository {
   getNotificationById(params: { id: string }): Promise<Notification>;
 
   markAsRead(params: { id: string; actorId?: string }): Promise<void>;
-
-  publishEvent(event: NotificationEventPayload): Promise<void>;
 }
