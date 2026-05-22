@@ -3,12 +3,12 @@
 on:
   pull_request:
     branches:
-      - ci-cd
+      - develop
       - staging
       - main
   push:
     branches:
-      - ci-cd
+      - develop
 
 permissions:
   contents: read

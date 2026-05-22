@@ -6,7 +6,12 @@ import type { RequestOptions } from "./types";
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
 function buildUrl(path: string, params?: RequestOptions["params"]): string {
-  const url = new URL(`${BASE_URL}${path}`);
+  const base =
+    BASE_URL ||
+    (typeof window !== "undefined" && window.location.origin
+      ? window.location.origin
+      : "http://localhost");
+  const url = new URL(`${BASE_URL}${path}`, base);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined) {
