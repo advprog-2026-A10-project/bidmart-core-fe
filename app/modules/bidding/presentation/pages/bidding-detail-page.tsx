@@ -216,10 +216,7 @@ function buildSummary(status: MyBidStatus, winningGap: number): { headline: stri
   }
 }
 
-function mapDetailToView(
-  detail: MyBidDetail,
-  history: AuctionHistory,
-): { detail: BidDetail } {
+function mapDetailToView(detail: MyBidDetail, history: AuctionHistory): { detail: BidDetail } {
   const myBidStatus = detail.myBidStatus;
   const auctionStatus = detail.auction.status;
   const historyPreview = history.bids.slice(0, 5).map((entry) => ({

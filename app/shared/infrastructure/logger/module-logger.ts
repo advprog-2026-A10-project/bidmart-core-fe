@@ -17,8 +17,7 @@ type ModuleLogLevel = "debug" | "info" | "warn" | "error";
 
 const ENABLED =
   typeof import.meta !== "undefined" &&
-  (import.meta.env?.MODE !== "production" ||
-    import.meta.env?.VITE_LOG_HTTP === "true");
+  (import.meta.env?.MODE !== "production" || import.meta.env?.VITE_LOG_HTTP === "true");
 
 function emit(level: ModuleLogLevel, module: string, event: string, context: LogContext): void {
   if (!ENABLED) {
@@ -83,15 +82,13 @@ export function createModuleLogger(module: string) {
       context: LogContext = {},
     ): Promise<T> {
       const requestId = createRequestId();
-      const startedAt =
-        typeof performance !== "undefined" ? performance.now() : Date.now();
+      const startedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
       emit("info", module, "op_started", { operation, requestId, ...context });
 
       try {
         const result = await run({ requestId });
         const elapsedMs = Math.round(
-          (typeof performance !== "undefined" ? performance.now() : Date.now()) -
-            startedAt,
+          (typeof performance !== "undefined" ? performance.now() : Date.now()) - startedAt,
         );
         emit("info", module, "op_succeeded", {
           operation,
@@ -102,8 +99,7 @@ export function createModuleLogger(module: string) {
         return result;
       } catch (error) {
         const elapsedMs = Math.round(
-          (typeof performance !== "undefined" ? performance.now() : Date.now()) -
-            startedAt,
+          (typeof performance !== "undefined" ? performance.now() : Date.now()) - startedAt,
         );
         emit("warn", module, "op_failed", {
           operation,

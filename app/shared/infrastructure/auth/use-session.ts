@@ -1,12 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 
-import {
-  fetchSessionUser,
-  resolveLoginUrl,
-  signOut,
-  type SessionUser,
-} from "./auth-client";
+import { fetchSessionUser, resolveLoginUrl, signOut, type SessionUser } from "./auth-client";
 
 export const SESSION_QUERY_KEY = ["auth", "session"] as const;
 

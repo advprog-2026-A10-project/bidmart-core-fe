@@ -2,16 +2,18 @@
 
 import http from "node:http";
 
-const host = process.env.E2E_API_HOST ?? "127.0.0.1";
-const port = Number(process.env.E2E_API_PORT ?? 18081);
+const host = process.env.E2E_API_HOST?.trim();
+const port = Number(process.env.E2E_API_PORT ?? 8080);
 const now = "2026-05-20T10:00:00.000Z";
 const future = "2026-06-20T10:00:00.000Z";
 
 const orderId = "11111111-1111-4111-8111-111111111111";
 const notificationId = "22222222-2222-4222-8222-222222222222";
-const auctionId = "auction-1";
+const auctionSlug = "auction-1";
+const auctionId = "77777777-7777-4777-8777-777777777777";
 const listingId = "55555555-5555-4555-8555-555555555555";
 const sellerId = "66666666-6666-4666-8666-666666666666";
+const buyerId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
 const orders = [
   {
@@ -19,7 +21,7 @@ const orders = [
     lot: "Banksy - Shredded Beauty",
     stage: "active",
     status: "Awaiting Payment",
-    buyerId: "buyer-vel",
+    buyerId,
     sellerId: "seller-adr",
     total: "$25,400,000",
     currency: "USD",
@@ -33,7 +35,7 @@ const orders = [
     lot: "Banksy - Flower Thrower",
     stage: "processing",
     status: "In Transit",
-    buyerId: "buyer-vel",
+    buyerId,
     sellerId: "seller-ddl",
     total: "$1,250,000",
     currency: "USD",
@@ -54,7 +56,7 @@ const notifications = [
     type: "WinnerDetermined",
     createdAt: now,
     readAt: null,
-    metadata: { userId: "buyer-vel" },
+    metadata: { userId: buyerId },
   },
   {
     id: "44444444-4444-4444-8444-444444444444",
@@ -65,7 +67,7 @@ const notifications = [
     type: "OrderUpdate",
     createdAt: now,
     readAt: now,
-    metadata: { userId: "buyer-vel" },
+    metadata: { userId: buyerId },
   },
 ];
 
@@ -136,31 +138,32 @@ const listing = {
   min_increment: 250_000,
   bid_count: 7,
   status: "ACTIVE",
-  auction_id: "77777777-7777-4777-8777-777777777777",
+  auction_id: auctionId,
   starts_at: now,
   ends_at: future,
   created_at: now,
   updated_at: now,
 };
 
-function sendJson(response, status, body) {
-  response.writeHead(status, {
+function responseCorsHeaders(request) {
+  return {
     "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Headers": "Content-Type, Accept",
+    "Access-Control-Allow-Headers": "Content-Type, Accept, X-Request-ID",
     "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Origin": "http://127.0.0.1:3107",
+    "Access-Control-Allow-Origin": request.headers.origin ?? "http://127.0.0.1:3107",
+  };
+}
+
+function sendJson(request, response, status, body) {
+  response.writeHead(status, {
+    ...responseCorsHeaders(request),
     "Content-Type": "application/json",
   });
   response.end(JSON.stringify(body));
 }
 
-function sendNoContent(response) {
-  response.writeHead(204, {
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Headers": "Content-Type, Accept",
-    "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Origin": "http://127.0.0.1:3107",
-  });
+function sendNoContent(request, response) {
+  response.writeHead(204, responseCorsHeaders(request));
   response.end();
 }
 
@@ -179,71 +182,90 @@ function getBody(request) {
 const server = http.createServer(async (request, response) => {
   const url = new URL(request.url ?? "/", `http://${host}:${port}`);
   const pathname = url.pathname;
+  const apiPath = pathname.startsWith("/api/v1")
+    ? pathname.slice("/api/v1".length) || "/"
+    : pathname;
+  console.log(`${request.method ?? "GET"} ${pathname}`);
 
   if (request.method === "OPTIONS") {
-    sendNoContent(response);
+    sendNoContent(request, response);
     return;
   }
 
   if (pathname === "/healthz") {
-    sendJson(response, 200, { ok: true });
+    sendJson(request, response, 200, { ok: true });
     return;
   }
 
-  if (!pathname.startsWith("/api/v1")) {
-    sendJson(response, 404, { message: "Not found" });
+  if (request.method === "POST" && pathname === "/auth/validate") {
+    sendJson(request, response, 200, {
+      userId: buyerId,
+      name: "Vel",
+      email: "vel@example.test",
+      emailVerified: true,
+      mfaSatisfied: true,
+      sessionExpiry: future,
+    });
     return;
   }
 
-  if (request.method === "GET" && pathname === "/api/v1/orders") {
+  if (request.method === "POST" && pathname === "/auth/logout") {
+    sendNoContent(request, response);
+    return;
+  }
+
+  if (request.method === "GET" && apiPath === "/orders") {
     const stage = url.searchParams.get("stage");
     const filtered = stage ? orders.filter((order) => order.stage === stage) : orders;
-    sendJson(response, 200, { data: filtered, total: filtered.length });
+    sendJson(request, response, 200, { data: filtered, total: filtered.length });
     return;
   }
 
-  if (request.method === "GET" && pathname === `/api/v1/orders/${orderId}`) {
-    sendJson(response, 200, orders[0]);
+  if (request.method === "GET" && apiPath === `/orders/${orderId}`) {
+    sendJson(request, response, 200, orders[0]);
     return;
   }
 
-  if (request.method === "POST" && pathname === `/api/v1/orders/${orderId}/confirm`) {
-    sendNoContent(response);
+  if (request.method === "POST" && apiPath === `/orders/${orderId}/confirm`) {
+    sendNoContent(request, response);
     return;
   }
 
-  if (request.method === "GET" && pathname === "/api/v1/notifications") {
+  if (request.method === "GET" && apiPath === "/notifications") {
     const unreadOnly = url.searchParams.get("unreadOnly") === "true";
     const filtered = unreadOnly
       ? notifications.filter((notification) => notification.readAt === null)
       : notifications;
-    sendJson(response, 200, { data: filtered });
+    sendJson(request, response, 200, { data: filtered });
     return;
   }
 
-  if (request.method === "GET" && pathname === `/api/v1/notifications/${notificationId}`) {
-    sendJson(response, 200, notifications[0]);
+  if (request.method === "GET" && apiPath === `/notifications/${notificationId}`) {
+    sendJson(request, response, 200, notifications[0]);
     return;
   }
 
-  if (request.method === "PATCH" && pathname === `/api/v1/notifications/${notificationId}/read`) {
-    sendNoContent(response);
+  if (request.method === "PATCH" && apiPath === `/notifications/${notificationId}/read`) {
+    sendNoContent(request, response);
     return;
   }
 
-  if (request.method === "GET" && pathname === "/api/v1/me/bids") {
+  if (request.method === "GET" && apiPath === "/me/bids") {
     const status = url.searchParams.get("status");
     const data = !status || status === "winning" ? [myBid] : [];
-    sendJson(response, 200, {
-      user: { id: "buyer-vel", name: "Vel" },
+    sendJson(request, response, 200, {
+      user: { id: buyerId, name: "Vel" },
       data,
       summary: { all: 1, winning: 1, outbid: 0, won: 0, lost: 0 },
     });
     return;
   }
 
-  if (request.method === "GET" && pathname === `/api/v1/me/bids/${auctionId}`) {
-    sendJson(response, 200, {
+  if (
+    request.method === "GET" &&
+    (apiPath === `/me/bids/${auctionSlug}` || apiPath === `/me/bids/${auctionId}`)
+  ) {
+    sendJson(request, response, 200, {
       auction,
       myLatestBid: 8_250_000,
       myBidStatus: "WINNING",
@@ -255,19 +277,25 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
-  if (request.method === "GET" && pathname === `/api/v1/auctions/${auctionId}`) {
-    sendJson(response, 200, auction);
+  if (
+    request.method === "GET" &&
+    (apiPath === `/auctions/${auctionSlug}` || apiPath === `/auctions/${auctionId}`)
+  ) {
+    sendJson(request, response, 200, auction);
     return;
   }
 
-  if (request.method === "GET" && pathname === `/api/v1/auctions/${auctionId}/history`) {
-    sendJson(response, 200, {
+  if (
+    request.method === "GET" &&
+    (apiPath === `/auctions/${auctionSlug}/history` || apiPath === `/auctions/${auctionId}/history`)
+  ) {
+    sendJson(request, response, 200, {
       auction,
       bids: [
         {
           id: "88888888-8888-4888-8888-888888888888",
           auctionId,
-          bidderId: "buyer-vel",
+          bidderId: buyerId,
           bidderName: "Bidder A",
           amount: 8_250_000,
           status: "LEADING",
@@ -284,10 +312,13 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
-  if (request.method === "GET" && pathname === `/api/v1/auctions/${auctionId}/proxy`) {
-    sendJson(response, 200, {
+  if (
+    request.method === "GET" &&
+    (apiPath === `/auctions/${auctionSlug}/proxy` || apiPath === `/auctions/${auctionId}/proxy`)
+  ) {
+    sendJson(request, response, 200, {
       auctionId,
-      bidderId: "buyer-vel",
+      bidderId: buyerId,
       enabled: false,
       maxAmount: null,
       auctionStatus: "ACTIVE",
@@ -299,19 +330,23 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
-  if (request.method === "GET" && pathname === "/api/v1/wallet") {
-    sendJson(response, 200, { availableCents: 12_000_000, heldCents: 2_000_000, currency: "IDR" });
+  if (request.method === "GET" && apiPath === "/wallet") {
+    sendJson(request, response, 200, {
+      availableCents: 12_000_000,
+      heldCents: 2_000_000,
+      currency: "IDR",
+    });
     return;
   }
 
-  if (request.method === "GET" && pathname === "/api/v1/wallet/transactions") {
-    sendJson(response, 200, { data: [], page: 1, pageSize: 10, total: 0 });
+  if (request.method === "GET" && apiPath === "/wallet/transactions") {
+    sendJson(request, response, 200, { data: [], page: 1, pageSize: 10, total: 0 });
     return;
   }
 
-  if (request.method === "POST" && pathname === "/api/v1/wallet/topup") {
+  if (request.method === "POST" && apiPath === "/wallet/topup") {
     await getBody(request);
-    sendJson(response, 200, {
+    sendJson(request, response, 200, {
       topupId: "99999999-9999-4999-8999-999999999999",
       status: "PENDING",
       newAvailableCents: 12_000_000,
@@ -319,30 +354,31 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
-  if (request.method === "POST" && pathname === "/api/v1/wallet/withdraw") {
+  if (request.method === "POST" && apiPath === "/wallet/withdraw") {
     await getBody(request);
-    sendJson(response, 200, {
+    sendJson(request, response, 200, {
       withdrawId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       status: "PENDING",
     });
     return;
   }
 
-  if (request.method === "GET" && pathname === "/api/v1/seller/listings") {
-    sendJson(response, 200, { data: [listing], total: 1, page: 1, page_size: 10 });
+  if (request.method === "GET" && apiPath === "/seller/listings") {
+    sendJson(request, response, 200, { data: [listing], total: 1, page: 1, page_size: 10 });
     return;
   }
 
-  if (request.method === "GET" && pathname === "/api/v1/catalog") {
-    sendJson(response, 200, { data: [listing], total: 1, page: 1, page_size: 10 });
+  if (request.method === "GET" && apiPath === "/catalog") {
+    sendJson(request, response, 200, { data: [listing], total: 1, page: 1, page_size: 10 });
     return;
   }
 
-  sendJson(response, 404, { message: `No E2E mock for ${request.method} ${pathname}` });
+  sendJson(request, response, 404, { message: `No E2E mock for ${request.method} ${pathname}` });
 });
 
-server.listen(port, host, () => {
-  console.log(`E2E mock API listening on http://${host}:${port}`);
+const listenArgs = host ? [port, host] : [port];
+server.listen(...listenArgs, () => {
+  console.log(`E2E mock API listening on port ${port}`);
 });
 
 process.on("SIGTERM", () => server.close());

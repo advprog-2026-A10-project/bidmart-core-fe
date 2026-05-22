@@ -307,9 +307,7 @@ export default function BiddingPage() {
   const myBidsQuery = useQuery({
     queryKey: [MY_BIDS_QUERY_KEY, activeFilter],
     queryFn: () =>
-      useCases.listMyBids.execute(
-        activeFilter === "all" ? {} : { status: activeFilter },
-      ),
+      useCases.listMyBids.execute(activeFilter === "all" ? {} : { status: activeFilter }),
   });
 
   const handleFilterChange = (nextValue: MyBidFilterValue) => {
