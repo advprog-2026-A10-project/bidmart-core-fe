@@ -8,6 +8,10 @@ export default defineConfig({
     pool: "vmForks",
     globals: true,
     setupFiles: ["./app/test/setup.ts"],
+    exclude: ["**/node_modules/**", "**/dist/**", "**/build/**", "**/.react-router/**", "e2e/**"],
+    env: {
+      VITE_API_BASE_URL: "http://localhost",
+    },
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
