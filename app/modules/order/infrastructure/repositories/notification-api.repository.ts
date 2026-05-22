@@ -39,10 +39,9 @@ export class NotificationApiRepository implements INotificationRepository {
     return logger.trace(
       "getNotificationById",
       async ({ requestId }) => {
-        const raw = await apiClient.get<NotificationApiResponse>(
-          `${this.basePath}/${params.id}`,
-          { headers: { "X-Request-ID": requestId } },
-        );
+        const raw = await apiClient.get<NotificationApiResponse>(`${this.basePath}/${params.id}`, {
+          headers: { "X-Request-ID": requestId },
+        });
         return NotificationApiMapper.toDomain(raw);
       },
       { notificationId: params.id },

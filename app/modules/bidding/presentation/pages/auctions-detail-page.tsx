@@ -98,8 +98,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function extractAuctionSnapshot(payload: unknown): Auction | null {
-  const candidate =
-    isRecord(payload) && isRecord(payload.auction) ? payload.auction : payload;
+  const candidate = isRecord(payload) && isRecord(payload.auction) ? payload.auction : payload;
   const parsed = auctionApiSchema.safeParse(candidate);
   return parsed.success ? BiddingApiMapper.toAuction(parsed.data) : null;
 }
@@ -317,15 +316,12 @@ export default function AuctionsDetailPage() {
           const snapshotHasMyLatestBid =
             isRecord(event.payload) &&
             Object.prototype.hasOwnProperty.call(event.payload, "myLatestBid");
-          queryClient.setQueryData<Auction>(
-            [AUCTION_DETAIL_QUERY_KEY, auctionId],
-            (current) => {
-              if (snapshotHasMyLatestBid || !current) {
-                return snapshot;
-              }
-              return { ...snapshot, myLatestBid: current.myLatestBid };
-            },
-          );
+          queryClient.setQueryData<Auction>([AUCTION_DETAIL_QUERY_KEY, auctionId], (current) => {
+            if (snapshotHasMyLatestBid || !current) {
+              return snapshot;
+            }
+            return { ...snapshot, myLatestBid: current.myLatestBid };
+          });
           return;
         }
 

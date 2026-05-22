@@ -83,8 +83,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function extractAuctionSnapshot(payload: unknown): Auction | null {
-  const candidate =
-    isRecord(payload) && isRecord(payload.auction) ? payload.auction : payload;
+  const candidate = isRecord(payload) && isRecord(payload.auction) ? payload.auction : payload;
   const parsed = auctionApiSchema.safeParse(candidate);
   return parsed.success ? BiddingApiMapper.toAuction(parsed.data) : null;
 }

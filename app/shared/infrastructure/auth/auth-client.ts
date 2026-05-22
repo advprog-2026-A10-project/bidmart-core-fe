@@ -52,43 +52,40 @@ export async function fetchSessionUser(): Promise<SessionUser | null> {
     return null;
   }
 
-  return logger.trace(
-    "validateSession",
-    async ({ requestId }) => {
-      const response = await fetch(`${base}/auth/validate`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          "X-Request-ID": requestId,
-        },
-      });
+  return logger.trace("validateSession", async ({ requestId }) => {
+    const response = await fetch(`${base}/auth/validate`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-Request-ID": requestId,
+      },
+    });
 
-      if (response.status === 401 || response.status === 403) {
-        return null;
-      }
-      if (!response.ok) {
-        throw new Error(`auth-be validate returned ${response.status}`);
-      }
+    if (response.status === 401 || response.status === 403) {
+      return null;
+    }
+    if (!response.ok) {
+      throw new Error(`auth-be validate returned ${response.status}`);
+    }
 
-      const body = (await response.json()) as Record<string, unknown>;
-      // Tolerant shape: AUTH_VALIDATE_CONTRACT names + a couple of variants
-      // that appeared in earlier iterations of the contract document.
-      const userId = String(body.userId ?? body.user_id ?? "");
-      const name = String(body.name ?? "");
-      const email = String(body.email ?? "");
-      if (!userId || !email) return null;
-      return {
-        userId,
-        name,
-        email,
-        emailVerified: Boolean(body.emailVerified ?? body.email_verified ?? false),
-        mfaSatisfied: Boolean(body.mfaSatisfied ?? body.mfa_satisfied ?? false),
-        sessionExpiry: String(body.sessionExpiry ?? body.session_expiry ?? ""),
-      } satisfies SessionUser;
-    },
-  );
+    const body = (await response.json()) as Record<string, unknown>;
+    // Tolerant shape: AUTH_VALIDATE_CONTRACT names + a couple of variants
+    // that appeared in earlier iterations of the contract document.
+    const userId = String(body.userId ?? body.user_id ?? "");
+    const name = String(body.name ?? "");
+    const email = String(body.email ?? "");
+    if (!userId || !email) return null;
+    return {
+      userId,
+      name,
+      email,
+      emailVerified: Boolean(body.emailVerified ?? body.email_verified ?? false),
+      mfaSatisfied: Boolean(body.mfaSatisfied ?? body.mfa_satisfied ?? false),
+      sessionExpiry: String(body.sessionExpiry ?? body.session_expiry ?? ""),
+    } satisfies SessionUser;
+  });
 }
 
 /**

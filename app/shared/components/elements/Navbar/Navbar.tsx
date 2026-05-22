@@ -114,10 +114,7 @@ function SignedInActions({ user }: { user: SessionUser }) {
   const [mobileOpenPath, setMobileOpenPath] = useState<string | null>(null);
   const mobileOpen = mobileOpenPath === location.pathname;
 
-  const initials = useMemo(
-    () => deriveInitials(user.name, user.email),
-    [user.name, user.email],
-  );
+  const initials = useMemo(() => deriveInitials(user.name, user.email), [user.name, user.email]);
 
   const walletBalanceQuery = useQuery({
     queryKey: WALLET_BALANCE_QUERY_KEY,
