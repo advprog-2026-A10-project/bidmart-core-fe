@@ -12,6 +12,7 @@ const mocked = vi.hoisted(() => {
   return {
     getCatalogUseCases: vi.fn(),
     getCatalogExecute: vi.fn(),
+    listCategoriesExecute: vi.fn(),
     browseCategoryExecute: vi.fn(),
     getPublicListingExecute: vi.fn(),
   };
@@ -44,14 +45,18 @@ function createWrapper(initialEntry: string, routePath: string, element: React.R
 describe("Catalog buyer pages", () => {
   beforeEach(() => {
     mocked.getCatalogExecute.mockReset();
+    mocked.listCategoriesExecute.mockReset();
     mocked.browseCategoryExecute.mockReset();
     mocked.getPublicListingExecute.mockReset();
 
     mocked.getCatalogUseCases.mockReturnValue({
       getCatalog: { execute: mocked.getCatalogExecute },
+      listCategories: { execute: mocked.listCategoriesExecute },
       browseCategoryPathCatalog: { execute: mocked.browseCategoryExecute },
       getPublicListing: { execute: mocked.getPublicListingExecute },
     });
+
+    mocked.listCategoriesExecute.mockResolvedValue([]);
   });
 
   it("renders catalog page with query-driven listing data", async () => {

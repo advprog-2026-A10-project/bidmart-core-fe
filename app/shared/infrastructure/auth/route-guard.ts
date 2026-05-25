@@ -6,14 +6,25 @@ type ApiSessionGuardConfig = {
   fallbackLoginPath?: string;
 };
 
+function resolveApiBaseUrl(requestUrl: string): string {
+  const raw = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim();
+  if (!raw) {
+    return requestUrl;
+  }
+
+  try {
+    return new URL(raw).toString();
+  } catch {
+    return new URL(raw, requestUrl).toString();
+  }
+}
+
 function resolveProbeUrl(
   requestUrl: string,
   probePath: string,
   probeQuery?: Record<string, string>,
 ): string {
-  const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim();
-  const base = apiBaseUrl && apiBaseUrl.length > 0 ? apiBaseUrl : requestUrl;
-  const probeUrl = new URL(probePath, base);
+  const probeUrl = new URL(probePath, resolveApiBaseUrl(requestUrl));
 
   if (probeQuery) {
     for (const [key, value] of Object.entries(probeQuery)) {

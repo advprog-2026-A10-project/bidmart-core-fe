@@ -34,6 +34,15 @@ export type CatalogListingDetail = {
   readonly images: CatalogListingImage[];
 };
 
+export type CatalogCategory = {
+  readonly id: number;
+  readonly parentId: number | null;
+  readonly name: string;
+  readonly slug: string;
+  readonly imageUrl: string | null;
+  readonly childCount: number;
+};
+
 export type PaginatedCatalogListings = {
   readonly data: CatalogListing[];
   readonly total: number;

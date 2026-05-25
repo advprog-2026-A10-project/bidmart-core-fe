@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CatalogApiRepository } from "../catalog-api.repository";
 
+function expectPathSuffix(url: URL, suffix: string) {
+  expect(url.pathname.endsWith(suffix)).toBe(true);
+}
+
 function mockListingDetailResponse() {
   return {
     id: "2d4d2f09-529e-4f97-a98b-c3f9fd581f4e",
@@ -88,7 +92,7 @@ describe("CatalogApiRepository", () => {
 
     const [requestedUrl, options] = fetchMock.mock.calls[0] as [string, RequestInit];
     const parsedUrl = new URL(requestedUrl);
-    expect(parsedUrl.pathname).toBe("/catalog");
+    expectPathSuffix(parsedUrl, "/catalog");
     expect(parsedUrl.searchParams.get("q")).toBe("keyboard");
     expect(parsedUrl.searchParams.get("category_id")).toBe("12");
     expect(parsedUrl.searchParams.get("min")).toBe("1000000");
@@ -171,7 +175,7 @@ describe("CatalogApiRepository", () => {
 
     const [requestedUrl, options] = fetchMock.mock.calls[0] as [string, RequestInit];
     const parsedUrl = new URL(requestedUrl);
-    expect(parsedUrl.pathname).toBe("/seller/listings");
+    expectPathSuffix(parsedUrl, "/seller/listings");
     expect(options.method).toBe("POST");
 
     const body = JSON.parse(String(options.body)) as Record<string, unknown>;
@@ -184,5 +188,44 @@ describe("CatalogApiRepository", () => {
 
     expect(result.listing.id).toBe("2d4d2f09-529e-4f97-a98b-c3f9fd581f4e");
     expect(result.images[0]?.url).toBe("https://example.com/keyboard.jpg");
+  });
+
+  it("maps listCategories response and parent filter param", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify([
+          {
+            id: 12,
+            parent_id: 7,
+            name: "Camera",
+            slug: "camera",
+            image_url: "https://placehold.co/640x360/png?text=Camera",
+            child_count: 3,
+          },
+        ]),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const repository = new CatalogApiRepository();
+    const result = await repository.listCategories({ parentId: 7 });
+
+    const [requestedUrl, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const parsedUrl = new URL(requestedUrl);
+    expectPathSuffix(parsedUrl, "/categories");
+    expect(parsedUrl.searchParams.get("parent_id")).toBe("7");
+    expect(options.method).toBe("GET");
+
+    expect(result).toEqual([
+      {
+        id: 12,
+        parentId: 7,
+        name: "Camera",
+        slug: "camera",
+        imageUrl: "https://placehold.co/640x360/png?text=Camera",
+        childCount: 3,
+      },
+    ]);
   });
 });

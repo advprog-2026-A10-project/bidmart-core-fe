@@ -15,6 +15,10 @@ export type BrowseCategoryPathDTO = PaginationDTO & {
   categoryPath: string;
 };
 
+export type ListCategoriesDTO = {
+  parentId?: number;
+};
+
 export type GetListingDetailDTO = {
   listingId: string;
 };

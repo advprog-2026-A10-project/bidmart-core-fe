@@ -3,11 +3,13 @@ import type {
   BrowseCategoryPathDTO,
   CreateSellerListingDTO,
   GetListingDetailDTO,
+  ListCategoriesDTO,
   PaginationDTO,
   SellerListingActionDTO,
   UpdateSellerListingDTO,
 } from "~/modules/catalog/application/dtos/catalog.dto";
 import type {
+  CatalogCategory,
   CatalogListingDetail,
   PaginatedCatalogListings,
 } from "~/modules/catalog/domain/entities/catalog";
@@ -21,6 +23,7 @@ import type {
 export interface ICatalogRepository {
   browseCatalog(params: BrowseCatalogDTO): Promise<PaginatedCatalogListings>;
   browseCategoryPath(params: BrowseCategoryPathDTO): Promise<PaginatedCatalogListings>;
+  listCategories(params: ListCategoriesDTO): Promise<CatalogCategory[]>;
   getPublicListing(params: GetListingDetailDTO): Promise<CatalogListingDetail>;
 
   listMyListings(params: PaginationDTO): Promise<PaginatedCatalogListings>;

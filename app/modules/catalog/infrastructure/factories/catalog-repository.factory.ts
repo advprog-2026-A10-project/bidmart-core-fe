@@ -6,6 +6,7 @@ import { GetCatalogUseCase } from "~/modules/catalog/application/use-cases/get-c
 import { GetMyListingUseCase } from "~/modules/catalog/application/use-cases/get-my-listing.use-case";
 import { GetPublicListingUseCase } from "~/modules/catalog/application/use-cases/get-public-listing.use-case";
 import { ListMyListingsUseCase } from "~/modules/catalog/application/use-cases/list-my-listings.use-case";
+import { ListCategoriesUseCase } from "~/modules/catalog/application/use-cases/list-categories.use-case";
 import { PublishListingUseCase } from "~/modules/catalog/application/use-cases/publish-listing.use-case";
 import { UpdateListingUseCase } from "~/modules/catalog/application/use-cases/update-listing.use-case";
 
@@ -19,6 +20,7 @@ import { UpdateListingUseCase } from "~/modules/catalog/application/use-cases/up
 export type CatalogUseCases = {
   getCatalog: GetCatalogUseCase;
   browseCategoryPathCatalog: BrowseCategoryPathCatalogUseCase;
+  listCategories: ListCategoriesUseCase;
   getPublicListing: GetPublicListingUseCase;
   listMyListings: ListMyListingsUseCase;
   getMyListing: GetMyListingUseCase;
@@ -34,6 +36,7 @@ export function createCatalogUseCases(): CatalogUseCases {
   return {
     getCatalog: new GetCatalogUseCase(catalogRepository),
     browseCategoryPathCatalog: new BrowseCategoryPathCatalogUseCase(catalogRepository),
+    listCategories: new ListCategoriesUseCase(catalogRepository),
     getPublicListing: new GetPublicListingUseCase(catalogRepository),
     listMyListings: new ListMyListingsUseCase(catalogRepository),
     getMyListing: new GetMyListingUseCase(catalogRepository),

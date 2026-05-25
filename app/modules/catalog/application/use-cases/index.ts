@@ -1,5 +1,6 @@
 export * from "./get-catalog.use-case";
 export * from "./browse-category-path-catalog.use-case";
+export * from "./list-categories.use-case";
 export * from "./get-public-listing.use-case";
 export * from "./list-my-listings.use-case";
 export * from "./get-my-listing.use-case";
