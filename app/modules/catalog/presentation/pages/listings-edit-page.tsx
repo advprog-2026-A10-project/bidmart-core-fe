@@ -189,6 +189,14 @@ export default function ListingsEditPage() {
   const listing = detailQuery.data.listing;
   const imageCount = uploadedImages.length;
   const descriptionLength = description.trim().length;
+  const canModifyListing =
+    (listing.status === "Draft" || listing.status === "Active") && listing.bidCount === 0;
+  const blockedEditReason =
+    listing.status === "Cancelled"
+      ? "Listing ini sudah dibatalkan dan tidak bisa diedit lagi."
+      : listing.bidCount > 0
+        ? "Listing yang sudah memiliki bid tidak bisa diedit."
+        : "Listing ini tidak dapat diedit pada status saat ini.";
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
@@ -216,16 +224,23 @@ export default function ListingsEditPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
+              {!canModifyListing ? (
+                <p className="text-destructive border-destructive/30 bg-destructive/10 mb-4 rounded-md border px-3 py-2 text-sm">
+                  {blockedEditReason}
+                </p>
+              ) : null}
               <form
                 className="space-y-5"
                 onSubmit={(event) => {
                   event.preventDefault();
+                  if (!canModifyListing) return;
                   updateMutation.mutate();
                 }}
               >
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
                   <Textarea
+                    disabled={!canModifyListing}
                     id="description"
                     onChange={(event) => setDescription(event.target.value)}
                     placeholder="Describe condition updates, accessories, and extra notes."
@@ -244,6 +259,7 @@ export default function ListingsEditPage() {
                       ref={fileInputRef}
                       accept="image/*"
                       className="max-w-md"
+                      disabled={!canModifyListing}
                       id="listing-images"
                       multiple
                       onChange={(event) => {
@@ -259,7 +275,9 @@ export default function ListingsEditPage() {
                     ) : (
                       <p className="text-muted-foreground inline-flex items-center gap-1 text-xs">
                         <Upload className="size-3.5" />
-                        JPG/PNG/WebP, maksimal 10 file
+                        {!canModifyListing
+                          ? "Editing image is disabled for this listing state"
+                          : "JPG/PNG/WebP, maksimal 10 file"}
                       </p>
                     )}
                   </div>
@@ -283,6 +301,7 @@ export default function ListingsEditPage() {
                                 {formatFileSize(image.size)}
                               </p>
                               <Button
+                                disabled={!canModifyListing}
                                 onClick={() => {
                                   setUploadedImages((previous) =>
                                     previous.filter((item) => item.url !== image.url),
@@ -322,7 +341,10 @@ export default function ListingsEditPage() {
                   <Button asChild type="button" variant="outline">
                     <Link to={`/seller/listings/${listing.id}`}>Back to detail</Link>
                   </Button>
-                  <Button disabled={updateMutation.isPending || isUploadingImages} type="submit">
+                  <Button
+                    disabled={updateMutation.isPending || isUploadingImages || !canModifyListing}
+                    type="submit"
+                  >
                     <Save className="size-4" />
                     {updateMutation.isPending ? "Saving..." : "Save changes"}
                   </Button>

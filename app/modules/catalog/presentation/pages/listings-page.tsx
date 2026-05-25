@@ -44,6 +44,23 @@ function formatDateTime(value: string): string {
   }).format(new Date(value));
 }
 
+function getStatusBadgeClassName(status: string): string {
+  switch (status) {
+    case "Draft":
+      return "border-slate-300 bg-slate-100 text-slate-800";
+    case "Active":
+      return "border-emerald-300 bg-emerald-100 text-emerald-800";
+    case "Cancelled":
+      return "border-red-300 bg-red-100 text-red-800";
+    case "Sold":
+      return "border-blue-300 bg-blue-100 text-blue-800";
+    case "Expired":
+      return "border-amber-300 bg-amber-100 text-amber-900";
+    default:
+      return "border-zinc-300 bg-zinc-100 text-zinc-800";
+  }
+}
+
 export default function ListingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const useCases = getCatalogUseCases();
@@ -186,7 +203,11 @@ export default function ListingsPage() {
             {!listingsQuery.isLoading && !listingsQuery.isError && listings.length > 0 ? (
               <>
                 <div className="grid gap-3 md:hidden">
-                  {listings.map((listing) => (
+                  {listings.map((listing) => {
+                    const canModifyListing =
+                      (listing.status === "Draft" || listing.status === "Active") &&
+                      listing.bidCount === 0;
+                    return (
                     <article className="rounded-lg border p-3" key={listing.id}>
                       <div className="space-y-2">
                         <div className="flex items-start justify-between gap-2">
@@ -196,7 +217,7 @@ export default function ListingsPage() {
                               {listing.categoryName || "Uncategorized"}
                             </p>
                           </div>
-                          <Badge variant={listing.status === "Draft" ? "secondary" : "outline"}>
+                          <Badge className={getStatusBadgeClassName(listing.status)} variant="outline">
                             {listing.status}
                           </Badge>
                         </div>
@@ -209,12 +230,16 @@ export default function ListingsPage() {
                           <Button asChild size="sm" variant="outline">
                             <Link to={`/seller/listings/${listing.id}`}>Detail</Link>
                           </Button>
-                          <Button asChild size="sm" variant="outline">
-                            <Link to={`/seller/listings/${listing.id}/edit`}>Edit</Link>
-                          </Button>
-                          <Button asChild size="sm" variant="outline">
-                            <Link to={`/seller/listings/${listing.id}/cancel`}>Cancel</Link>
-                          </Button>
+                          {canModifyListing ? (
+                            <Button asChild size="sm" variant="outline">
+                              <Link to={`/seller/listings/${listing.id}/edit`}>Edit</Link>
+                            </Button>
+                          ) : null}
+                          {canModifyListing ? (
+                            <Button asChild size="sm" variant="outline">
+                              <Link to={`/seller/listings/${listing.id}/cancel`}>Cancel</Link>
+                            </Button>
+                          ) : null}
                           {listing.status === "Draft" ? (
                             <Button
                               disabled={publishMutation.isPending}
@@ -227,7 +252,8 @@ export default function ListingsPage() {
                         </div>
                       </div>
                     </article>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <div className="hidden overflow-x-auto md:block">
@@ -243,48 +269,60 @@ export default function ListingsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {listings.map((listing) => (
-                        <TableRow className="hover:bg-muted/30" key={listing.id}>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <p className="font-medium">{listing.title}</p>
-                              <p className="text-muted-foreground text-xs">
-                                {listing.categoryName || "Uncategorized"}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={listing.status === "Draft" ? "secondary" : "outline"}>
-                              {listing.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{formatCurrency(listing.currentPrice)}</TableCell>
-                          <TableCell>{listing.bidCount}</TableCell>
-                          <TableCell className="text-xs">{formatDateTime(listing.endsAt)}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex flex-wrap justify-end gap-2">
-                              <Button asChild size="sm" variant="outline">
-                                <Link to={`/seller/listings/${listing.id}`}>Detail</Link>
-                              </Button>
-                              <Button asChild size="sm" variant="outline">
-                                <Link to={`/seller/listings/${listing.id}/edit`}>Edit</Link>
-                              </Button>
-                              <Button asChild size="sm" variant="outline">
-                                <Link to={`/seller/listings/${listing.id}/cancel`}>Cancel</Link>
-                              </Button>
-                              {listing.status === "Draft" ? (
-                                <Button
-                                  disabled={publishMutation.isPending}
-                                  onClick={() => publishMutation.mutate(listing.id)}
-                                  size="sm"
-                                >
-                                  {publishingListingId === listing.id ? "Publishing..." : "Publish"}
+                      {listings.map((listing) => {
+                        const canModifyListing =
+                          (listing.status === "Draft" || listing.status === "Active") &&
+                          listing.bidCount === 0;
+                        return (
+                          <TableRow className="hover:bg-muted/30" key={listing.id}>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <p className="font-medium">{listing.title}</p>
+                                <p className="text-muted-foreground text-xs">
+                                  {listing.categoryName || "Uncategorized"}
+                                </p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                className={getStatusBadgeClassName(listing.status)}
+                                variant="outline"
+                              >
+                                {listing.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{formatCurrency(listing.currentPrice)}</TableCell>
+                            <TableCell>{listing.bidCount}</TableCell>
+                            <TableCell className="text-xs">{formatDateTime(listing.endsAt)}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex flex-wrap justify-end gap-2">
+                                <Button asChild size="sm" variant="outline">
+                                  <Link to={`/seller/listings/${listing.id}`}>Detail</Link>
                                 </Button>
-                              ) : null}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                                {canModifyListing ? (
+                                  <Button asChild size="sm" variant="outline">
+                                    <Link to={`/seller/listings/${listing.id}/edit`}>Edit</Link>
+                                  </Button>
+                                ) : null}
+                                {canModifyListing ? (
+                                  <Button asChild size="sm" variant="outline">
+                                    <Link to={`/seller/listings/${listing.id}/cancel`}>Cancel</Link>
+                                  </Button>
+                                ) : null}
+                                {listing.status === "Draft" ? (
+                                  <Button
+                                    disabled={publishMutation.isPending}
+                                    onClick={() => publishMutation.mutate(listing.id)}
+                                    size="sm"
+                                  >
+                                    {publishingListingId === listing.id ? "Publishing..." : "Publish"}
+                                  </Button>
+                                ) : null}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>

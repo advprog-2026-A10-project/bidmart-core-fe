@@ -105,6 +105,8 @@ export default function ListingsDetailPage() {
 
   const listing = detailQuery.data.listing;
   const images = detailQuery.data.images;
+  const canModifyListing =
+    (listing.status === "Draft" || listing.status === "Active") && listing.bidCount === 0;
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
@@ -126,15 +128,19 @@ export default function ListingsDetailPage() {
               <Button asChild size="sm" variant="outline">
                 <Link to="/seller/listings">Back</Link>
               </Button>
-              <Button asChild size="sm" variant="outline">
-                <Link to={`/seller/listings/${listing.id}/edit`}>
-                  <PencilLine className="size-4" />
-                  Edit
-                </Link>
-              </Button>
-              <Button asChild size="sm" variant="outline">
-                <Link to={`/seller/listings/${listing.id}/cancel`}>Cancel</Link>
-              </Button>
+              {canModifyListing ? (
+                <Button asChild size="sm" variant="outline">
+                  <Link to={`/seller/listings/${listing.id}/edit`}>
+                    <PencilLine className="size-4" />
+                    Edit
+                  </Link>
+                </Button>
+              ) : null}
+              {canModifyListing ? (
+                <Button asChild size="sm" variant="outline">
+                  <Link to={`/seller/listings/${listing.id}/cancel`}>Cancel</Link>
+                </Button>
+              ) : null}
               {listing.status === "Draft" ? (
                 <Button
                   disabled={publishMutation.isPending}
