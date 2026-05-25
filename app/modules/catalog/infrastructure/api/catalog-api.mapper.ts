@@ -34,6 +34,7 @@ export class CatalogApiMapper {
       endsAt: raw.ends_at,
       createdAt: raw.created_at,
       updatedAt: raw.updated_at,
+      thumbnailUrl: raw.thumbnail_url ?? null,
     };
   }
 

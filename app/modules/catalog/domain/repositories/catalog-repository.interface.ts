@@ -5,6 +5,8 @@ import type {
   GetListingDetailDTO,
   ListCategoriesDTO,
   PaginationDTO,
+  PresignedListingUploadDTO,
+  PresignListingUploadDTO,
   SellerListingActionDTO,
   UpdateSellerListingDTO,
 } from "~/modules/catalog/application/dtos/catalog.dto";
@@ -29,6 +31,7 @@ export interface ICatalogRepository {
   listMyListings(params: PaginationDTO): Promise<PaginatedCatalogListings>;
   getMyListing(params: GetListingDetailDTO): Promise<CatalogListingDetail>;
   createListing(params: CreateSellerListingDTO): Promise<CatalogListingDetail>;
+  presignListingUpload(params: PresignListingUploadDTO): Promise<PresignedListingUploadDTO>;
   updateListing(params: UpdateSellerListingDTO): Promise<CatalogListingDetail>;
   cancelListing(params: SellerListingActionDTO): Promise<void>;
   publishListing(params: SellerListingActionDTO): Promise<CatalogListingDetail>;

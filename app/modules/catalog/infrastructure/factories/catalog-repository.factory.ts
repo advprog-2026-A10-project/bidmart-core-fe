@@ -8,6 +8,7 @@ import { GetPublicListingUseCase } from "~/modules/catalog/application/use-cases
 import { ListMyListingsUseCase } from "~/modules/catalog/application/use-cases/list-my-listings.use-case";
 import { ListCategoriesUseCase } from "~/modules/catalog/application/use-cases/list-categories.use-case";
 import { PublishListingUseCase } from "~/modules/catalog/application/use-cases/publish-listing.use-case";
+import { PresignListingUploadUseCase } from "~/modules/catalog/application/use-cases/presign-listing-upload.use-case";
 import { UpdateListingUseCase } from "~/modules/catalog/application/use-cases/update-listing.use-case";
 
 /**
@@ -25,6 +26,7 @@ export type CatalogUseCases = {
   listMyListings: ListMyListingsUseCase;
   getMyListing: GetMyListingUseCase;
   createListing: CreateListingUseCase;
+  presignListingUpload: PresignListingUploadUseCase;
   updateListing: UpdateListingUseCase;
   cancelListing: CancelListingUseCase;
   publishListing: PublishListingUseCase;
@@ -41,6 +43,7 @@ export function createCatalogUseCases(): CatalogUseCases {
     listMyListings: new ListMyListingsUseCase(catalogRepository),
     getMyListing: new GetMyListingUseCase(catalogRepository),
     createListing: new CreateListingUseCase(catalogRepository),
+    presignListingUpload: new PresignListingUploadUseCase(catalogRepository),
     updateListing: new UpdateListingUseCase(catalogRepository),
     cancelListing: new CancelListingUseCase(catalogRepository),
     publishListing: new PublishListingUseCase(catalogRepository),

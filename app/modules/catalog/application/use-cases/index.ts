@@ -8,3 +8,4 @@ export * from "./create-listing.use-case";
 export * from "./update-listing.use-case";
 export * from "./cancel-listing.use-case";
 export * from "./publish-listing.use-case";
+export * from "./presign-listing-upload.use-case";

@@ -24,6 +24,7 @@ export const catalogListingApiSchema = z.object({
   ends_at: z.string(),
   created_at: z.string(),
   updated_at: z.string(),
+  thumbnail_url: z.string().url().nullish(),
 });
 
 export const catalogCategoryApiSchema = z.object({
@@ -52,8 +53,16 @@ export const catalogListingDetailApiSchema = catalogListingApiSchema.extend({
   images: z.array(catalogListingImageApiSchema),
 });
 
+export const presignedListingUploadApiSchema = z.object({
+  upload_url: z.string().url(),
+  public_url: z.string().url(),
+  object_key: z.string().min(1),
+  expires_in_seconds: z.number().int().positive(),
+});
+
 export type CatalogListingApi = z.infer<typeof catalogListingApiSchema>;
 export type CatalogCategoryApi = z.infer<typeof catalogCategoryApiSchema>;
 export type CatalogListingImageApi = z.infer<typeof catalogListingImageApiSchema>;
 export type PaginatedCatalogListingApi = z.infer<typeof paginatedCatalogListingApiSchema>;
 export type CatalogListingDetailApi = z.infer<typeof catalogListingDetailApiSchema>;
+export type PresignedListingUploadApi = z.infer<typeof presignedListingUploadApiSchema>;

@@ -21,6 +21,7 @@ export type CatalogListing = {
   readonly endsAt: string;
   readonly createdAt: string;
   readonly updatedAt: string;
+  readonly thumbnailUrl: string | null;
 };
 
 export type CatalogListingImage = {

@@ -5,6 +5,8 @@ import type {
   GetListingDetailDTO,
   ListCategoriesDTO,
   PaginationDTO,
+  PresignedListingUploadDTO,
+  PresignListingUploadDTO,
   SellerListingActionDTO,
   UpdateSellerListingDTO,
 } from "~/modules/catalog/application/dtos/catalog.dto";
@@ -21,6 +23,7 @@ import {
   catalogCategoryApiSchema,
   catalogListingDetailApiSchema,
   paginatedCatalogListingApiSchema,
+  presignedListingUploadApiSchema,
 } from "../api/schemas";
 
 const logger = createModuleLogger("catalog");
@@ -140,6 +143,26 @@ export class CatalogApiRepository implements ICatalogRepository {
       );
       const validated = catalogListingDetailApiSchema.parse(raw);
       return CatalogApiMapper.toListingDetail(validated);
+    });
+  }
+
+  async presignListingUpload(params: PresignListingUploadDTO): Promise<PresignedListingUploadDTO> {
+    return logger.trace("presignListingUpload", async ({ requestId }) => {
+      const raw = await apiClient.post<unknown>(
+        "/seller/listings/uploads/presign",
+        {
+          file_name: params.fileName,
+          content_type: params.contentType ?? null,
+        },
+        { headers: { "X-Request-ID": requestId } },
+      );
+      const validated = presignedListingUploadApiSchema.parse(raw);
+      return {
+        uploadUrl: validated.upload_url,
+        publicUrl: validated.public_url,
+        objectKey: validated.object_key,
+        expiresInSeconds: validated.expires_in_seconds,
+      };
     });
   }
 

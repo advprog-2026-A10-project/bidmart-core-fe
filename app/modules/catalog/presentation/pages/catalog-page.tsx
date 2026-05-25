@@ -88,9 +88,17 @@ function toDateTimeLocalValue(value: string): string {
   return adjusted.toISOString().slice(0, 16);
 }
 
-function buildListingImageUrl(title: string, categoryName: string): string {
+function buildFallbackListingImageUrl(title: string, categoryName: string): string {
   const text = encodeURIComponent(`${categoryName || "Catalog"} - ${title}`);
   return `https://placehold.co/1200x900/png?text=${text}`;
+}
+
+function resolveListingImageUrl(
+  thumbnailUrl: string | null,
+  title: string,
+  categoryName: string,
+): string {
+  return thumbnailUrl ?? buildFallbackListingImageUrl(title, categoryName);
 }
 
 function formatRemainingTime(value: string): string {
@@ -686,7 +694,11 @@ export default function CatalogPage() {
                       alt={listing.title}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       loading="lazy"
-                      src={buildListingImageUrl(listing.title, listing.categoryName)}
+                      src={resolveListingImageUrl(
+                        listing.thumbnailUrl,
+                        listing.title,
+                        listing.categoryName,
+                      )}
                     />
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent p-3">
                       <p className="truncate text-sm font-semibold text-white">{listing.title}</p>

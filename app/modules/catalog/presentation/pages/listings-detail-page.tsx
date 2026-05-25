@@ -1,4 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  CalendarClock,
+  Gavel,
+  Image as ImageIcon,
+  PencilLine,
+  Tags,
+  Timer,
+  Wallet,
+} from "lucide-react";
 import { Link, useParams } from "react-router";
 
 import { getCatalogUseCases } from "~/modules/catalog/infrastructure/factories/catalog-repository.factory";
@@ -100,32 +109,68 @@ export default function ListingsDetailPage() {
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
       <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold">Seller Listing Detail</h1>
-            <p className="text-muted-foreground text-sm">Listing ID: {listing.id}</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button asChild size="sm" variant="outline">
-              <Link to="/seller/listings">Back</Link>
-            </Button>
-            <Button asChild size="sm" variant="outline">
-              <Link to={`/seller/listings/${listing.id}/edit`}>Edit</Link>
-            </Button>
-            <Button asChild size="sm" variant="outline">
-              <Link to={`/seller/listings/${listing.id}/cancel`}>Cancel</Link>
-            </Button>
-            {listing.status === "Draft" ? (
-              <Button
-                disabled={publishMutation.isPending}
-                onClick={() => publishMutation.mutate()}
-                size="sm"
-              >
-                {publishMutation.isPending ? "Publishing..." : "Publish"}
+        <header className="border-primary/15 from-primary/10 via-background to-background rounded-2xl border bg-gradient-to-br p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold tracking-tight">Seller Listing Detail</h1>
+              <p className="text-muted-foreground text-sm">Listing ID: {listing.id}</p>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant={listing.status === "Draft" ? "secondary" : "outline"}>
+                  {listing.status}
+                </Badge>
+                <Badge variant="secondary">{listing.categoryName || "Uncategorized"}</Badge>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button asChild size="sm" variant="outline">
+                <Link to="/seller/listings">Back</Link>
               </Button>
-            ) : null}
+              <Button asChild size="sm" variant="outline">
+                <Link to={`/seller/listings/${listing.id}/edit`}>
+                  <PencilLine className="size-4" />
+                  Edit
+                </Link>
+              </Button>
+              <Button asChild size="sm" variant="outline">
+                <Link to={`/seller/listings/${listing.id}/cancel`}>Cancel</Link>
+              </Button>
+              {listing.status === "Draft" ? (
+                <Button
+                  disabled={publishMutation.isPending}
+                  onClick={() => publishMutation.mutate()}
+                  size="sm"
+                >
+                  {publishMutation.isPending ? "Publishing..." : "Publish"}
+                </Button>
+              ) : null}
+            </div>
           </div>
-        </div>
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            <div className="rounded-lg border bg-white/70 p-3 backdrop-blur">
+              <p className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+                <Wallet className="size-3.5" />
+                Current price
+              </p>
+              <p className="text-base font-semibold">{formatCurrency(listing.currentPrice)}</p>
+            </div>
+            <div className="rounded-lg border bg-white/70 p-3 backdrop-blur">
+              <p className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+                <Gavel className="size-3.5" />
+                Total bids
+              </p>
+              <p className="text-base font-semibold">{listing.bidCount}</p>
+            </div>
+            <div className="rounded-lg border bg-white/70 p-3 backdrop-blur">
+              <p className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+                <Timer className="size-3.5" />
+                Ends at
+              </p>
+              <p className="text-base font-semibold">{formatDateTime(listing.endsAt)}</p>
+            </div>
+          </div>
+        </header>
 
         {publishMutation.isError ? (
           <Card className="border-destructive/30">
@@ -141,12 +186,6 @@ export default function ListingsDetailPage() {
           <main className="space-y-6 lg:col-span-8">
             <Card>
               <CardHeader className="space-y-2">
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant={listing.status === "Draft" ? "secondary" : "outline"}>
-                    {listing.status}
-                  </Badge>
-                  <Badge variant="secondary">{listing.categoryName || "Uncategorized"}</Badge>
-                </div>
                 <CardTitle className="text-2xl">{listing.title}</CardTitle>
                 <p className="text-muted-foreground text-sm">
                   Seller: <span className="font-medium">{listing.sellerName}</span>
@@ -159,7 +198,10 @@ export default function ListingsDetailPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Images</CardTitle>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <ImageIcon className="text-primary size-4" />
+                  Image Gallery
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {images.length === 0 ? (
@@ -167,14 +209,14 @@ export default function ListingsDetailPage() {
                 ) : (
                   <div className="grid gap-3 sm:grid-cols-2">
                     {images.map((image) => (
-                      <div className="overflow-hidden rounded-md border" key={image.id}>
+                      <figure className="overflow-hidden rounded-lg border" key={image.id}>
                         <img
                           alt={listing.title}
                           className="h-56 w-full object-cover"
                           loading="lazy"
                           src={image.url}
                         />
-                      </div>
+                      </figure>
                     ))}
                   </div>
                 )}
@@ -182,10 +224,13 @@ export default function ListingsDetailPage() {
             </Card>
           </main>
 
-          <aside className="space-y-4 lg:col-span-4">
+          <aside className="space-y-4 lg:col-span-4 lg:sticky lg:top-20 lg:self-start">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Auction Values</CardTitle>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Wallet className="text-primary size-4" />
+                  Auction Values
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <p>
@@ -212,7 +257,10 @@ export default function ListingsDetailPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Timing</CardTitle>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <CalendarClock className="text-primary size-4" />
+                  Timing
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <p>
@@ -226,6 +274,29 @@ export default function ListingsDetailPage() {
                 <p>
                   <span className="text-muted-foreground">Updated at:</span>{" "}
                   {formatDateTime(listing.updatedAt)}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Tags className="text-primary size-4" />
+                  Metadata
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <p>
+                  <span className="text-muted-foreground">Category:</span>{" "}
+                  {listing.categoryName || "Uncategorized"}
+                </p>
+                <p>
+                  <span className="text-muted-foreground">Auction ID:</span>{" "}
+                  {listing.auctionId ?? "Not linked"}
+                </p>
+                <p>
+                  <span className="text-muted-foreground">Created at:</span>{" "}
+                  {formatDateTime(listing.createdAt)}
                 </p>
               </CardContent>
             </Card>
