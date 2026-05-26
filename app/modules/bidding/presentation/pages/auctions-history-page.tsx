@@ -189,7 +189,9 @@ function isNearSimultaneous(bids: BidHistoryEntry[], index: number) {
 
 function HistorySkeleton() {
   return (
-    <div className="container mx-auto space-y-6 px-4 py-8">
+    <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
+      <div className="space-y-6">
+      <Skeleton className="h-32 w-full rounded-2xl" />
       <Skeleton className="h-10 w-64" />
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <Card>
@@ -211,7 +213,8 @@ function HistorySkeleton() {
           <Skeleton className="h-64 w-full" />
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </section>
   );
 }
 
@@ -274,7 +277,7 @@ export default function AuctionsHistoryPage() {
 
   if (historyQuery.isError || !historyQuery.data) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
         <Card>
           <CardHeader>
             <CardTitle>Auction history not available</CardTitle>
@@ -283,7 +286,7 @@ export default function AuctionsHistoryPage() {
             </CardDescription>
           </CardHeader>
         </Card>
-      </div>
+      </section>
     );
   }
 
@@ -293,8 +296,10 @@ export default function AuctionsHistoryPage() {
   const nearSimultaneousCount = bids.filter((_, index) => isNearSimultaneous(bids, index)).length;
 
   return (
-    <div className="container mx-auto space-y-6 px-4 py-8">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
+      <div className="space-y-6">
+      <header className="border-primary/15 from-primary/10 via-background to-background rounded-2xl border bg-gradient-to-br p-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
           <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <Link
@@ -314,13 +319,14 @@ export default function AuctionsHistoryPage() {
           </p>
         </div>
 
-        <Button asChild variant="outline">
+        <Button asChild size="sm" variant="outline">
           <Link to={`/auctions/${auction.id}`}>
             Open live auction
             <ArrowUpRight className="size-4" />
           </Link>
         </Button>
-      </div>
+        </div>
+      </header>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <Card className="overflow-hidden">
@@ -407,7 +413,7 @@ export default function AuctionsHistoryPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="xl:sticky xl:top-20 xl:self-start">
           <CardHeader>
             <CardTitle>Ordering rules</CardTitle>
             <CardDescription>
@@ -515,6 +521,7 @@ export default function AuctionsHistoryPage() {
           </ScrollArea>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </section>
   );
 }

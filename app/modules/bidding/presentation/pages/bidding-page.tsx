@@ -276,7 +276,9 @@ function EmptyState({ filter }: { filter: MyBidFilterValue }) {
 
 function LoadingState() {
   return (
-    <div className="container mx-auto space-y-6 px-4 py-8">
+    <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
+      <div className="space-y-6">
+      <Skeleton className="h-32 w-full rounded-2xl" />
       <Skeleton className="h-10 w-56" />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
@@ -291,7 +293,8 @@ function LoadingState() {
           <Skeleton className="h-12 w-full" />
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </section>
   );
 }
 
@@ -332,7 +335,7 @@ export default function BiddingPage() {
 
   if (myBidsQuery.isError || !myBidsQuery.data) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
         <Card>
           <CardHeader>
             <CardTitle>Unable to load your bids</CardTitle>
@@ -341,15 +344,17 @@ export default function BiddingPage() {
             </CardDescription>
           </CardHeader>
         </Card>
-      </div>
+      </section>
     );
   }
 
   const { user, bids, summary } = myBidsQuery.data;
 
   return (
-    <div className="container mx-auto space-y-6 px-4 py-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
+      <div className="space-y-6">
+      <header className="border-primary/15 from-primary/10 via-background to-background rounded-2xl border bg-gradient-to-br p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-2">
           <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <Gavel className="size-4" />
@@ -357,12 +362,8 @@ export default function BiddingPage() {
           </div>
           <h1 className="text-3xl font-semibold tracking-tight">My bids</h1>
           <p className="text-muted-foreground max-w-3xl text-sm leading-6">
-            Filterable bidding history for <code>GET /me/bids</code> and
-            <code> GET /me/bids?status=winning|outbid|won|lost</code>. The list keeps the
-            buyer-facing bid result separate from the auction&rsquo;s own database status enum, so
-            each row can show both{" "}
-            <span className="text-foreground font-medium">my bid status</span>
-            and <span className="text-foreground font-medium">auction status</span>.
+            Track your auction performance in one place: monitor auctions where you are currently
+            leading, auctions where you were outbid, and finalized results.
           </p>
         </div>
 
@@ -370,7 +371,8 @@ export default function BiddingPage() {
           <Badge variant="outline">{summary.all} tracked auctions</Badge>
           <Badge variant="outline">Filter: {activeFilter}</Badge>
         </div>
-      </div>
+        </div>
+      </header>
 
       <SummaryCards summary={summary} />
 
@@ -379,8 +381,8 @@ export default function BiddingPage() {
           <div className="space-y-1">
             <CardTitle>Status filter</CardTitle>
             <CardDescription>
-              The query parameter drives the visible list. “Winning” and “Outbid” represent live
-              auction position, while “Won” and “Lost” represent final outcomes after closing.
+              “Winning” and “Outbid” represent your live position, while “Won” and “Lost”
+              represent final outcomes after closing.
             </CardDescription>
           </div>
           <FilterTabs onValueChange={handleFilterChange} summary={summary} value={activeFilter} />
@@ -394,9 +396,7 @@ export default function BiddingPage() {
           <Card className="hidden lg:block">
             <CardHeader>
               <CardTitle>Bid history table</CardTitle>
-              <CardDescription>
-                Data is loaded from backend and filtered by your current status tab.
-              </CardDescription>
+              <CardDescription>Filtered by your currently selected status.</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -599,6 +599,7 @@ export default function BiddingPage() {
           </div>
         </>
       )}
-    </div>
+      </div>
+    </section>
   );
 }

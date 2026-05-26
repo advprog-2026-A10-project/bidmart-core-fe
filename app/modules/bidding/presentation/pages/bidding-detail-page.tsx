@@ -326,7 +326,9 @@ function SummaryMetric({ label, value, helper }: { label: string; value: string;
 
 function LoadingState() {
   return (
-    <div className="container mx-auto space-y-6 px-4 py-8">
+    <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
+      <div className="space-y-6">
+      <Skeleton className="h-32 w-full rounded-2xl" />
       <Skeleton className="h-10 w-40" />
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <Skeleton className="aspect-[4/3] w-full rounded-xl" />
@@ -338,7 +340,8 @@ function LoadingState() {
         ))}
       </div>
       <Skeleton className="h-[420px] w-full rounded-xl" />
-    </div>
+      </div>
+    </section>
   );
 }
 
@@ -366,7 +369,7 @@ export default function BiddingDetailPage() {
 
   if (bidDetailQuery.isError || !bidDetailQuery.data?.detail) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
         <Card className="border-destructive/30">
           <CardHeader>
             <CardTitle>Bid detail not available</CardTitle>
@@ -383,7 +386,7 @@ export default function BiddingDetailPage() {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </section>
     );
   }
 
@@ -391,27 +394,57 @@ export default function BiddingDetailPage() {
   const { auction } = detail;
 
   return (
-    <div className="container mx-auto space-y-6 px-4 py-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Button asChild variant="outline">
-          <Link to="/me/bids">
-            <ArrowLeft className="mr-2 size-4" />
-            Back to my bids
-          </Link>
-        </Button>
+    <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
+      <div className="space-y-6">
+      <header className="border-primary/15 from-primary/10 via-background to-background rounded-2xl border bg-gradient-to-br p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-2">
+            <div className="text-muted-foreground flex items-center gap-2 text-sm">
+              <Link className="hover:text-foreground inline-flex items-center gap-1" to="/me/bids">
+                <ArrowLeft className="size-4" />
+                Back to my bids
+              </Link>
+            </div>
+            <h1 className="text-3xl font-semibold tracking-tight">{auction.title}</h1>
+            <p className="text-muted-foreground max-w-3xl text-sm leading-6">
+              Detailed view of your bidding position, live auction metrics, and your recent bid
+              activity for this auction.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className={getAuctionStatusBadgeClasses(auction.status)}>
+                {getAuctionStatusLabel(auction.status)}
+              </Badge>
+              <Badge variant="outline" className={getMyStatusBadgeClasses(detail.myBidStatus)}>
+                {getMyStatusLabel(detail.myBidStatus)}
+              </Badge>
+              {detail.isReserveMet ? (
+                <Badge
+                  variant="outline"
+                  className="border-emerald-200 bg-emerald-100 text-emerald-800"
+                >
+                  Reserve met
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="border-amber-200 bg-amber-100 text-amber-900">
+                  Reserve not met
+                </Badge>
+              )}
+            </div>
+          </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline">
-            <Link to={`/auctions/${auction.id}`}>
-              Open auction page
-              <ArrowUpRight className="ml-2 size-4" />
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link to={`/auctions/${auction.id}/history`}>View full auction history</Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link to={`/auctions/${auction.id}`}>
+                Open auction page
+                <ArrowUpRight className="ml-2 size-4" />
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link to={`/auctions/${auction.id}/history`}>View full auction history</Link>
+            </Button>
+          </div>
         </div>
-      </div>
+      </header>
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <Card className="overflow-hidden py-0">
@@ -445,7 +478,7 @@ export default function BiddingDetailPage() {
             </div>
 
             <div className="space-y-2">
-              <h1 className="text-3xl font-semibold tracking-tight">{auction.title}</h1>
+              <h2 className="text-2xl font-semibold tracking-tight">Auction snapshot</h2>
               <p className="text-muted-foreground text-sm leading-6">{auction.description}</p>
             </div>
 
@@ -478,7 +511,7 @@ export default function BiddingDetailPage() {
           </CardContent>
         </Card>
 
-        <div className="space-y-6">
+        <div className="space-y-6 lg:sticky lg:top-20 lg:self-start">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -742,14 +775,15 @@ export default function BiddingDetailPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertCircle className="size-5" />
-            Backend handoff note
+            Notes
           </CardTitle>
           <CardDescription>
-            This page now reads backend bid-detail and auction-history endpoints using a route-param
-            query key.
+            This page aggregates your bid detail and recent auction history to give buyer-centric
+            visibility in one screen.
           </CardDescription>
         </CardHeader>
       </Card>
-    </div>
+      </div>
+    </section>
   );
 }

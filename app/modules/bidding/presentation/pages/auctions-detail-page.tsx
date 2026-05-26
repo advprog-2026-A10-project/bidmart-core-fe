@@ -192,7 +192,9 @@ function getStatusLabel(status: AuctionStatus) {
 
 function AuctionDetailSkeleton() {
   return (
-    <div className="container mx-auto space-y-6 px-4 py-8">
+    <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
+      <div className="space-y-6">
+        <Skeleton className="h-32 w-full rounded-2xl" />
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
         <Card>
           <CardHeader className="space-y-3">
@@ -222,7 +224,8 @@ function AuctionDetailSkeleton() {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+    </section>
   );
 }
 
@@ -367,7 +370,7 @@ export default function AuctionsDetailPage() {
 
   if (auctionQuery.isError || !auctionQuery.data) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
         <Card>
           <CardHeader>
             <CardTitle>Auction not available</CardTitle>
@@ -376,7 +379,7 @@ export default function AuctionsDetailPage() {
             </CardDescription>
           </CardHeader>
         </Card>
-      </div>
+      </section>
     );
   }
 
@@ -391,25 +394,45 @@ export default function AuctionsDetailPage() {
   const proxyMaxAmountInput = isProxyDraftDirty ? proxyMaxAmountDraft : proxyMaxAmountFromServer;
 
   return (
-    <div className="container mx-auto space-y-6 px-4 py-8">
+    <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
+      <div className="space-y-6">
+        <header className="border-primary/15 from-primary/10 via-background to-background rounded-2xl border bg-gradient-to-br p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold tracking-tight">{auction.title}</h1>
+              <p className="text-muted-foreground text-sm">
+                Sold by {auction.sellerName} • English auction with real-time updates.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Badge className={getStatusBadgeClasses(effectiveStatus)} variant="outline">
+                  {getStatusLabel(effectiveStatus)}
+                </Badge>
+                <Badge variant="secondary">{auction.bidCount} bids</Badge>
+                <Badge variant="secondary">Listing {truncateId(auction.listingId)}</Badge>
+              </div>
+            </div>
+            <Button asChild size="sm" variant="outline">
+              <Link to={`/auctions/${auction.id}/history`}>
+                View bid history
+                <ArrowUpRight className="size-4" />
+              </Link>
+            </Button>
+          </div>
+        </header>
+
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
         <div className="space-y-6">
           <Card className="overflow-hidden">
             <CardHeader className="space-y-4">
               <div className="flex flex-wrap items-center gap-3">
-                <Badge className={getStatusBadgeClasses(effectiveStatus)} variant="outline">
-                  {getStatusLabel(effectiveStatus)}
-                </Badge>
                 <Badge variant="outline">English Auction</Badge>
-                <Badge variant="outline">Listing {truncateId(auction.listingId)}</Badge>
                 <Badge variant="outline">Auction {truncateId(auction.id)}</Badge>
               </div>
 
               <div className="space-y-2">
-                <CardTitle className="text-2xl md:text-3xl">{auction.title}</CardTitle>
+                <CardTitle className="text-2xl md:text-3xl">Live auction overview</CardTitle>
                 <CardDescription className="max-w-3xl text-sm leading-6">
-                  Sold by {auction.sellerName} • Real-time bidding with increment enforcement and
-                  anti-sniping extension.
+                  Real-time bidding with increment enforcement and anti-sniping extension.
                 </CardDescription>
               </div>
             </CardHeader>
@@ -577,7 +600,7 @@ export default function AuctionsDetailPage() {
           </Card>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 xl:sticky xl:top-20 xl:self-start">
           <Card>
             <CardHeader>
               <CardTitle>Place your bid</CardTitle>
@@ -782,6 +805,7 @@ export default function AuctionsDetailPage() {
           </Card>
         </div>
       </div>
-    </div>
+      </div>
+    </section>
   );
 }
