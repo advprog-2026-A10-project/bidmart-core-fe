@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { ArrowDownUp, Clock3, Coins, Landmark, Wallet } from "lucide-react";
 import { Link } from "react-router";
 
 import { getWalletUseCases } from "~/modules/wallet/infrastructure/factories/wallet-repository.factory";
@@ -35,12 +36,22 @@ export default function WalletPage() {
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
       <div className="space-y-6">
-        <header className="space-y-1">
-          <h1 className="text-2xl font-bold">Wallet</h1>
-          <p className="text-muted-foreground text-sm">
-            See available and held balances, then manage top up, withdrawal, and transaction
-            history.
-          </p>
+        <header className="border-primary/15 from-primary/10 via-background to-background rounded-2xl border bg-gradient-to-br p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold tracking-tight">Wallet</h1>
+              <p className="text-muted-foreground text-sm">
+                Manage your available and held balance, then continue to top up, withdraw, and
+                transaction tracking.
+              </p>
+            </div>
+            <Button asChild size="sm">
+              <Link to="/wallet/transactions">
+                <Clock3 className="size-4" />
+                View transactions
+              </Link>
+            </Button>
+          </div>
         </header>
 
         {walletQuery.isLoading ? (
@@ -68,15 +79,24 @@ export default function WalletPage() {
                 <CardTitle>Balance Overview</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <p className="text-muted-foreground text-sm">Total wallet balance</p>
+                <p className="text-muted-foreground inline-flex items-center gap-1 text-sm">
+                  <Wallet className="size-4" />
+                  Total wallet balance
+                </p>
                 <p className="text-3xl font-bold">{formatCurrency(totalCents)}</p>
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="rounded-md border p-4">
-                    <p className="text-muted-foreground text-sm">Available</p>
+                    <p className="text-muted-foreground inline-flex items-center gap-1 text-sm">
+                      <Coins className="size-4" />
+                      Available
+                    </p>
                     <p className="text-xl font-semibold">{formatCurrency(availableCents)}</p>
                   </div>
                   <div className="rounded-md border p-4">
-                    <p className="text-muted-foreground text-sm">Held</p>
+                    <p className="text-muted-foreground inline-flex items-center gap-1 text-sm">
+                      <Landmark className="size-4" />
+                      Held
+                    </p>
                     <p className="text-xl font-semibold">{formatCurrency(heldCents)}</p>
                   </div>
                 </div>
@@ -89,10 +109,16 @@ export default function WalletPage() {
               </CardHeader>
               <CardContent className="flex flex-wrap gap-2">
                 <Button asChild>
-                  <Link to="/wallet/topup">Top Up</Link>
+                  <Link to="/wallet/topup">
+                    <ArrowDownUp className="size-4" />
+                    Top Up
+                  </Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link to="/wallet/withdraw">Withdraw</Link>
+                  <Link to="/wallet/withdraw">
+                    <ArrowDownUp className="size-4 rotate-180" />
+                    Withdraw
+                  </Link>
                 </Button>
                 <Button asChild variant="outline">
                   <Link to="/wallet/transactions">View Transactions</Link>
