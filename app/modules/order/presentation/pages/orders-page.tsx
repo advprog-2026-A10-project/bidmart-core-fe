@@ -84,10 +84,18 @@ const notificationToneVariant: Record<
 };
 
 function formatTimestamp(iso: string) {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("id-ID", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(iso));
+}
+
+function compactId(value: string) {
+  if (value.length < 14) {
+    return value;
+  }
+
+  return `${value.slice(0, 8)}...${value.slice(-6)}`;
 }
 
 export default function OrdersPage() {
@@ -138,9 +146,11 @@ export default function OrdersPage() {
 
   return (
     <div className="container mx-auto space-y-6 px-4 py-8">
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-muted-foreground text-xs tracking-[0.4em] uppercase">Order center</p>
+          <p className="text-muted-foreground text-xs tracking-[0.4em] uppercase">
+            Buyer order center
+          </p>
           <h1 className="text-foreground text-3xl font-bold tracking-tight">
             Orders and notifications
           </h1>
@@ -156,7 +166,7 @@ export default function OrdersPage() {
             Refresh notifications
           </Button>
         </div>
-      </div>
+      </header>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {summaryStats.map((stat) => (
@@ -240,7 +250,7 @@ export default function OrdersPage() {
                     <TableCell className="space-y-1">
                       <p className="text-foreground text-sm font-semibold">{order.lot}</p>
                       <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
-                        <span>{order.id}</span>
+                        <span>Order {compactId(order.id)}</span>
                         {order.tags.map((tag) => (
                           <Badge key={tag} variant="ghost">
                             {tag}
@@ -249,7 +259,7 @@ export default function OrdersPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <p className="text-sm font-medium">{order.sellerId}</p>
+                      <p className="text-sm font-medium">{compactId(order.sellerId)}</p>
                       <p className="text-muted-foreground text-xs">Seller account</p>
                     </TableCell>
                     <TableCell>

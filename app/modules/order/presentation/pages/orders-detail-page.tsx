@@ -42,10 +42,22 @@ const badgeVariantByStatus: Record<
 };
 
 function formatTimestamp(iso: string) {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("id-ID", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(iso));
+}
+
+function canConfirmOrder(order: Order) {
+  return order.status === "Needs Confirmation";
+}
+
+function canCreateDispute(order: Order) {
+  return (
+    order.status === "In Transit" ||
+    order.status === "Needs Confirmation" ||
+    order.status === "Dispute Alert"
+  );
 }
 
 function LoadingState() {
@@ -78,6 +90,9 @@ function SummaryCard({ title, value, helper }: { title: string; value: string; h
 }
 
 function Content({ order }: { order: Order }) {
+  const confirmEnabled = canConfirmOrder(order);
+  const disputeEnabled = canCreateDispute(order);
+
   const financialRows = [
     { label: "Order total", value: order.total, notes: "Current order amount from API" },
     { label: "Currency", value: order.currency, notes: "Quoted transaction currency" },
@@ -93,7 +108,7 @@ function Content({ order }: { order: Order }) {
     <div className="container mx-auto space-y-6 px-4 py-8">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
-          <p className="text-muted-foreground text-xs tracking-[0.3em] uppercase">Order Detail</p>
+          <p className="text-muted-foreground text-xs tracking-[0.3em] uppercase">Order detail</p>
           <h1 className="text-foreground text-3xl font-bold tracking-tight">{order.lot}</h1>
           <div className="text-muted-foreground flex flex-wrap items-center gap-3 text-sm">
             <Badge variant={badgeVariantByStatus[order.status] ?? "outline"}>{order.status}</Badge>
@@ -105,19 +120,41 @@ function Content({ order }: { order: Order }) {
           <Button asChild variant="outline" size="sm">
             <Link to="/orders">Back to orders</Link>
           </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link to={`/orders/${order.id}/confirm`}>Confirm receipt</Link>
-          </Button>
-          <Button asChild size="sm">
-            <Link to={`/orders/${order.id}/dispute/new`}>Create dispute</Link>
-          </Button>
+          {confirmEnabled ? (
+            <Button asChild variant="outline" size="sm">
+              <Link to={`/orders/${order.id}/confirm`}>Confirm receipt</Link>
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" disabled>
+              Confirm receipt
+            </Button>
+          )}
+          {disputeEnabled ? (
+            <Button asChild size="sm">
+              <Link to={`/orders/${order.id}/dispute/new`}>Create dispute</Link>
+            </Button>
+          ) : (
+            <Button size="sm" disabled>
+              Create dispute
+            </Button>
+          )}
         </div>
       </header>
 
       <div className="grid gap-4 md:grid-cols-3">
         <SummaryCard title="Total" value={order.total} helper="Order amount from backend" />
         <SummaryCard title="Stage" value={order.stage} helper="Lifecycle stage" />
-        <SummaryCard title="Currency" value={order.currency} helper="Settlement currency" />
+        <SummaryCard
+          title="Buyer actions"
+          value={confirmEnabled || disputeEnabled ? "Available" : "Limited"}
+          helper={
+            confirmEnabled
+              ? "You can confirm package receipt."
+              : disputeEnabled
+                ? "You can still open a dispute."
+                : "Order already in final non-actionable state."
+          }
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
@@ -130,11 +167,11 @@ function Content({ order }: { order: Order }) {
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <p className="text-muted-foreground text-xs">Buyer</p>
-                <p className="text-sm font-medium">{order.buyerId}</p>
+                <p className="text-sm font-medium break-all">{order.buyerId}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Seller</p>
-                <p className="text-sm font-medium">{order.sellerId}</p>
+                <p className="text-sm font-medium break-all">{order.sellerId}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Created</p>
@@ -175,11 +212,11 @@ function Content({ order }: { order: Order }) {
                   <AvatarFallback>{order.buyerId.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="text-sm font-medium">{order.buyerId}</p>
+                  <p className="text-sm font-medium break-all">{order.buyerId}</p>
                   <p className="text-muted-foreground text-xs">Buyer</p>
                 </div>
               </div>
-              <Badge variant="outline">Active</Badge>
+              <Badge variant="outline">You</Badge>
             </div>
 
             <div className="flex items-center justify-between gap-4">
@@ -188,11 +225,11 @@ function Content({ order }: { order: Order }) {
                   <AvatarFallback>{order.sellerId.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="text-sm font-medium">{order.sellerId}</p>
+                  <p className="text-sm font-medium break-all">{order.sellerId}</p>
                   <p className="text-muted-foreground text-xs">Seller</p>
                 </div>
               </div>
-              <Badge variant="outline">Verified</Badge>
+              <Badge variant="outline">Counterparty</Badge>
             </div>
           </CardContent>
           <CardFooter className="text-muted-foreground text-xs">

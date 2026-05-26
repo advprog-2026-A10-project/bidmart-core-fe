@@ -12,6 +12,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "~/shared/components/ui/card";
@@ -19,11 +20,27 @@ import { Skeleton } from "~/shared/components/ui/skeleton";
 
 const QUERY_KEY_ORDER_DETAIL = "order-detail";
 
+const badgeVariantByStatus: Record<
+  string,
+  "default" | "secondary" | "outline" | "destructive" | "ghost"
+> = {
+  "Awaiting Payment": "outline",
+  "In Transit": "default",
+  "Needs Confirmation": "secondary",
+  Delivered: "ghost",
+  "Dispute Closed": "ghost",
+  "Dispute Alert": "destructive",
+};
+
 function formatTimestamp(iso: string) {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("id-ID", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(iso));
+}
+
+function canConfirmOrder(status: string) {
+  return status === "Needs Confirmation";
 }
 
 export default function OrdersConfirmPage() {
@@ -85,17 +102,20 @@ export default function OrdersConfirmPage() {
   }
 
   const order = orderQuery.data;
-  const confirmDisabled = confirmMutation.isPending || confirmMutation.isSuccess;
+  const eligible = canConfirmOrder(order.status);
+
+  const confirmDisabled =
+    !eligible || confirmMutation.isPending || confirmMutation.isSuccess;
 
   return (
     <div className="container mx-auto space-y-6 px-4 py-8">
-      <div className="space-y-2">
+      <header className="space-y-2">
         <p className="text-muted-foreground text-xs tracking-[0.3em] uppercase">Buyer action</p>
         <h1 className="text-foreground text-3xl font-bold tracking-tight">Confirm order receipt</h1>
         <p className="text-muted-foreground text-sm">
-          This action triggers `POST /orders/:orderId/confirm`.
+          This action triggers `POST /orders/:orderId/confirm` after package has arrived.
         </p>
-      </div>
+      </header>
 
       <Card>
         <CardHeader>
@@ -106,7 +126,9 @@ export default function OrdersConfirmPage() {
           <div className="grid gap-3 md:grid-cols-2">
             <div>
               <p className="text-muted-foreground text-xs">Status</p>
-              <Badge variant="outline">{order.status}</Badge>
+              <Badge variant={badgeVariantByStatus[order.status] ?? "outline"}>
+                {order.status}
+              </Badge>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Total</p>
@@ -114,13 +136,20 @@ export default function OrdersConfirmPage() {
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Seller</p>
-              <p className="text-sm font-medium">{order.sellerId}</p>
+              <p className="text-sm font-medium break-all">{order.sellerId}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Updated at</p>
               <p className="text-sm font-medium">{formatTimestamp(order.updatedAt)}</p>
             </div>
           </div>
+
+          {!eligible ? (
+            <p className="rounded-md border border-amber-400/40 bg-amber-100/40 px-3 py-2 text-sm text-amber-900">
+              This order cannot be confirmed yet. Wait until status becomes{" "}
+              <strong>Needs Confirmation</strong>.
+            </p>
+          ) : null}
 
           {confirmMutation.isSuccess ? (
             <p className="rounded-md border border-emerald-400/40 bg-emerald-100/40 px-3 py-2 text-sm text-emerald-900">
@@ -133,21 +162,20 @@ export default function OrdersConfirmPage() {
               {confirmErrorMessage}
             </p>
           ) : null}
-
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" asChild>
-              <Link to={`/orders/${order.id}`}>Back to detail</Link>
-            </Button>
-            <Button onClick={() => confirmMutation.mutate()} disabled={confirmDisabled}>
-              {confirmMutation.isPending ? "Submitting..." : "Confirm received"}
-            </Button>
-            {confirmMutation.isSuccess ? (
-              <Button variant="ghost" onClick={() => navigate(`/orders/${order.id}`)}>
-                Return to detail
-              </Button>
-            ) : null}
-          </div>
         </CardContent>
+        <CardFooter className="flex flex-wrap gap-2">
+          <Button variant="outline" asChild>
+            <Link to={`/orders/${order.id}`}>Back to detail</Link>
+          </Button>
+          <Button onClick={() => confirmMutation.mutate()} disabled={confirmDisabled}>
+            {confirmMutation.isPending ? "Submitting..." : "Confirm received"}
+          </Button>
+          {confirmMutation.isSuccess ? (
+            <Button variant="ghost" onClick={() => navigate(`/orders/${order.id}`)}>
+              Return to detail
+            </Button>
+          ) : null}
+        </CardFooter>
       </Card>
     </div>
   );
