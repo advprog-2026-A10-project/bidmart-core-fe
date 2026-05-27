@@ -3,13 +3,30 @@ import { NetworkError } from "~/shared/domain/errors/network-error";
 import { NotFoundError } from "~/shared/domain/errors/not-found-error";
 import { ValidationError } from "~/shared/domain/errors/validation-error";
 
+function resolveValidationDescription(
+  fieldErrors?: Record<string, string[]>,
+  fallback?: string,
+): string {
+  if (!fieldErrors) return fallback ?? "Validation failed.";
+
+  const requestError = fieldErrors.request?.find((item) => item.trim().length > 0);
+  if (requestError) return requestError;
+
+  const firstError = Object.values(fieldErrors)
+    .flat()
+    .find((item) => item.trim().length > 0);
+  if (firstError) return firstError;
+
+  return fallback ?? "Validation failed.";
+}
+
 export function getCatalogUiErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof NotFoundError) {
     return error.message;
   }
 
   if (error instanceof ValidationError) {
-    return error.message;
+    return resolveValidationDescription(error.fieldErrors, error.message);
   }
 
   if (error instanceof NetworkError) {
@@ -25,7 +42,7 @@ export function getCatalogUiErrorMessage(error: unknown, fallback: string): stri
       case 409:
         return "Action conflicts with the current listing state.";
       case 422:
-        return "Validation failed. Please review the form.";
+        return error.message || "Validation failed. Please review the form.";
       default:
         return error.message || fallback;
     }

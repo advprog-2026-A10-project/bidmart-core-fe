@@ -13,6 +13,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "~/shared/components/ui/card";
@@ -29,13 +30,33 @@ import { Tabs, TabsList, TabsTrigger } from "~/shared/components/ui/tabs";
 
 const QUERY_KEY_SELLER_ORDERS = "seller-orders-page-orders";
 
-const stageFilters: Array<{ value: "all" | OrderStage; label: string }> = [
-  { value: "all", label: "All" },
-  { value: "active", label: "Active" },
-  { value: "processing", label: "Processing" },
-  { value: "completed", label: "Completed" },
-  { value: "cancelled", label: "Cancelled" },
+const stageFilters: Array<{ value: "all" | OrderStage; label: string; helper: string }> = [
+  { value: "all", label: "All", helper: "Every order in your seller queue." },
+  { value: "active", label: "Active", helper: "Awaiting payment and pre-fulfillment." },
+  { value: "processing", label: "Processing", helper: "Orders currently being shipped." },
+  { value: "completed", label: "Completed", helper: "Finished orders and closed lifecycle." },
+  { value: "cancelled", label: "Cancelled", helper: "Cancelled or refunded orders." },
 ];
+
+const badgeVariantByStatus: Record<
+  string,
+  "default" | "secondary" | "outline" | "destructive" | "ghost"
+> = {
+  "Awaiting Payment": "outline",
+  "In Transit": "default",
+  "Needs Confirmation": "secondary",
+  Delivered: "ghost",
+  "Dispute Closed": "ghost",
+  "Dispute Alert": "destructive",
+};
+
+function compactId(value: string) {
+  if (value.length < 14) {
+    return value;
+  }
+
+  return `${value.slice(0, 8)}...${value.slice(-6)}`;
+}
 
 export default function SellerOrdersPage() {
   const [selectedStage, setSelectedStage] = React.useState<"all" | OrderStage>("all");
@@ -56,26 +77,71 @@ export default function SellerOrdersPage() {
   );
 
   const orders = ordersQuery.data ?? [];
+  const activeCount = orders.filter((order) => order.stage === "active").length;
+  const processingCount = orders.filter((order) => order.stage === "processing").length;
+  const completedCount = orders.filter((order) => order.stage === "completed").length;
+
+  const stageHelper = stageFilters.find((filter) => filter.value === selectedStage)?.helper;
 
   return (
     <div className="container mx-auto space-y-6 px-4 py-8">
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-muted-foreground text-xs tracking-[0.3em] uppercase">Seller portal</p>
+          <p className="text-muted-foreground text-xs tracking-[0.4em] uppercase">Seller portal</p>
           <h1 className="text-foreground text-3xl font-bold tracking-tight">Seller orders</h1>
           <p className="text-muted-foreground text-sm">
-            Monitor all buyer orders connected to your listings.
+            Track buyer orders and move fulfillment without leaving this workspace.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => void ordersQuery.refetch()}>
-          Refresh
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => void ordersQuery.refetch()}>
+            Refresh
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/notifications">Open notifications</Link>
+          </Button>
+        </div>
+      </header>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Active</CardTitle>
+            <CardDescription>Orders waiting for shipment action.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-semibold">{activeCount}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Processing</CardTitle>
+            <CardDescription>Orders in transit or pending buyer confirmation.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-semibold">{processingCount}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Completed</CardTitle>
+            <CardDescription>Orders that already reached final state.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-semibold">{completedCount}</p>
+          </CardContent>
+        </Card>
       </div>
 
-      <Card>
+      <Card className="flex flex-col">
         <CardHeader className="space-y-3">
-          <CardTitle>Order board</CardTitle>
-          <CardDescription>Source: `/seller/orders` with optional stage filter.</CardDescription>
+          <div className="flex flex-wrap items-center gap-3">
+            <CardTitle>Order board</CardTitle>
+            <Badge variant="outline">{selectedStage.toUpperCase()}</Badge>
+          </div>
+          <CardDescription>{stageHelper}</CardDescription>
           <Tabs
             value={selectedStage}
             onValueChange={(value) => setSelectedStage(value as "all" | OrderStage)}
@@ -90,7 +156,7 @@ export default function SellerOrdersPage() {
           </Tabs>
         </CardHeader>
 
-        <CardContent className="px-0">
+        <CardContent className="px-0 pb-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -125,7 +191,7 @@ export default function SellerOrdersPage() {
               {!ordersQuery.isLoading && !ordersQuery.isError && orders.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-muted-foreground text-sm">
-                    No orders found for this filter.
+                    No seller orders found for this filter.
                   </TableCell>
                 </TableRow>
               ) : null}
@@ -134,11 +200,16 @@ export default function SellerOrdersPage() {
                 <TableRow key={order.id}>
                   <TableCell className="space-y-1">
                     <p className="text-foreground text-sm font-semibold">{order.lot}</p>
-                    <p className="text-muted-foreground text-xs">{order.id}</p>
+                    <p className="text-muted-foreground text-xs">Order {compactId(order.id)}</p>
                   </TableCell>
-                  <TableCell>{order.buyerId}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{order.status}</Badge>
+                    <p className="text-sm font-medium">{compactId(order.buyerId)}</p>
+                    <p className="text-muted-foreground text-xs">Buyer account</p>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={badgeVariantByStatus[order.status] ?? "outline"}>
+                      {order.status}
+                    </Badge>
                   </TableCell>
                   <TableCell className="font-semibold">{order.total}</TableCell>
                   <TableCell className="text-muted-foreground text-xs">
@@ -159,6 +230,10 @@ export default function SellerOrdersPage() {
             </TableBody>
           </Table>
         </CardContent>
+
+        <CardFooter className="text-muted-foreground text-xs">
+          API source: `GET /seller/orders` with optional `stage` query.
+        </CardFooter>
       </Card>
     </div>
   );

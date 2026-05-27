@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import {
   ArrowUpRight,
   CalendarClock,
@@ -13,6 +14,7 @@ import {
   Trophy,
   UserRound,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
 
@@ -36,6 +38,7 @@ import type { Auction, AuctionStatus } from "~/modules/bidding/domain/entities/b
 import { startAuctionRealtimeSocket } from "../../infrastructure/realtime/auction-websocket";
 import { BidForm } from "../components/bid-form";
 import { CountdownTimer } from "../components/countdown-timer";
+import { WALLET_QUERY_KEYS } from "~/modules/wallet/presentation/query-keys";
 
 type BidFormValues = {
   amount: number;
@@ -191,7 +194,9 @@ function getStatusLabel(status: AuctionStatus) {
 
 function AuctionDetailSkeleton() {
   return (
-    <div className="container mx-auto space-y-6 px-4 py-8">
+    <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
+      <div className="space-y-6">
+        <Skeleton className="h-32 w-full rounded-2xl" />
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
         <Card>
           <CardHeader className="space-y-3">
@@ -221,7 +226,8 @@ function AuctionDetailSkeleton() {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+    </section>
   );
 }
 
@@ -229,7 +235,30 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-muted/20 flex items-start justify-between gap-4 rounded-lg border p-3">
       <span className="text-muted-foreground text-sm">{label}</span>
-      <span className="text-right text-sm font-medium">{value}</span>
+      <span className="max-w-[70%] break-all text-right text-sm font-medium">{value}</span>
+    </div>
+  );
+}
+
+function AuctionMetricCard({
+  icon: Icon,
+  label,
+  value,
+  helper,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: ReactNode;
+  helper: ReactNode;
+}) {
+  return (
+    <div className="bg-muted/30 min-w-0 rounded-xl border p-4">
+      <div className="text-muted-foreground mb-2 flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
+        <Icon className="size-4" />
+        <span>{label}</span>
+      </div>
+      <p className="text-xl leading-tight font-semibold break-words xl:text-2xl">{value}</p>
+      <p className="text-muted-foreground mt-1 text-sm break-words">{helper}</p>
     </div>
   );
 }
@@ -243,6 +272,11 @@ export default function AuctionsDetailPage() {
 
   const useCases = getBiddingUseCases();
 
+  const invalidateWalletBalance = () =>
+    queryClient.invalidateQueries({
+      queryKey: [WALLET_QUERY_KEYS.balance],
+    });
+
   const auctionQuery = useQuery({
     queryKey: [AUCTION_DETAIL_QUERY_KEY, auctionId],
     queryFn: () => useCases.getAuction.execute({ auctionId }),
@@ -253,9 +287,12 @@ export default function AuctionsDetailPage() {
     mutationFn: ({ amount, maxAmount }: BidFormValues) =>
       useCases.placeBid.execute({ auctionId, amount, maxAmount }),
     onSuccess: async (result) => {
-      await queryClient.invalidateQueries({
-        queryKey: [AUCTION_DETAIL_QUERY_KEY, auctionId],
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [AUCTION_DETAIL_QUERY_KEY, auctionId],
+        }),
+        invalidateWalletBalance(),
+      ]);
       toast.success(
         result.autoBidApplied
           ? "Bid placed. Proxy auto-bid settlement has been applied."
@@ -329,6 +366,7 @@ export default function AuctionsDetailPage() {
           const payload = extractBidPlacedPayload(event.payload);
           if (payload) {
             toast(`New leading bid: ${formatCurrency(payload.currentPrice)}`);
+            void invalidateWalletBalance();
           }
           return;
         }
@@ -347,6 +385,8 @@ export default function AuctionsDetailPage() {
             return;
           }
 
+          void invalidateWalletBalance();
+
           if (payload.status === "WON") {
             toast.success("Auction finalized with a winning bid.");
           } else {
@@ -363,7 +403,7 @@ export default function AuctionsDetailPage() {
 
   if (auctionQuery.isError || !auctionQuery.data) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
         <Card>
           <CardHeader>
             <CardTitle>Auction not available</CardTitle>
@@ -372,7 +412,7 @@ export default function AuctionsDetailPage() {
             </CardDescription>
           </CardHeader>
         </Card>
-      </div>
+      </section>
     );
   }
 
@@ -387,25 +427,45 @@ export default function AuctionsDetailPage() {
   const proxyMaxAmountInput = isProxyDraftDirty ? proxyMaxAmountDraft : proxyMaxAmountFromServer;
 
   return (
-    <div className="container mx-auto space-y-6 px-4 py-8">
+    <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
+      <div className="space-y-6">
+        <header className="border-primary/15 from-primary/10 via-background to-background rounded-2xl border bg-gradient-to-br p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold tracking-tight break-words">{auction.title}</h1>
+              <p className="text-muted-foreground text-sm">
+                Sold by {auction.sellerName} • English auction with real-time updates.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Badge className={getStatusBadgeClasses(effectiveStatus)} variant="outline">
+                  {getStatusLabel(effectiveStatus)}
+                </Badge>
+                <Badge variant="secondary">{auction.bidCount} bids</Badge>
+                <Badge variant="secondary">Listing {truncateId(auction.listingId)}</Badge>
+              </div>
+            </div>
+            <Button asChild size="sm" variant="outline">
+              <Link to={`/auctions/${auction.id}/history`}>
+                View bid history
+                <ArrowUpRight className="size-4" />
+              </Link>
+            </Button>
+          </div>
+        </header>
+
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
         <div className="space-y-6">
           <Card className="overflow-hidden">
             <CardHeader className="space-y-4">
               <div className="flex flex-wrap items-center gap-3">
-                <Badge className={getStatusBadgeClasses(effectiveStatus)} variant="outline">
-                  {getStatusLabel(effectiveStatus)}
-                </Badge>
                 <Badge variant="outline">English Auction</Badge>
-                <Badge variant="outline">Listing {truncateId(auction.listingId)}</Badge>
                 <Badge variant="outline">Auction {truncateId(auction.id)}</Badge>
               </div>
 
               <div className="space-y-2">
-                <CardTitle className="text-2xl md:text-3xl">{auction.title}</CardTitle>
+                <CardTitle className="text-2xl md:text-3xl">Live auction overview</CardTitle>
                 <CardDescription className="max-w-3xl text-sm leading-6">
-                  Sold by {auction.sellerName} • Real-time bidding with increment enforcement and
-                  anti-sniping extension.
+                  Real-time bidding with increment enforcement and anti-sniping extension.
                 </CardDescription>
               </div>
             </CardHeader>
@@ -421,54 +481,38 @@ export default function AuctionsDetailPage() {
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div className="bg-muted/30 rounded-lg border p-4">
-                  <div className="text-muted-foreground mb-2 flex items-center gap-2 text-sm">
-                    <Gavel className="size-4" />
-                    Current highest bid
-                  </div>
-                  <p className="text-2xl font-semibold">{formatCurrency(auction.currentPrice)}</p>
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    Leading bidder: {auction.highestBidderAlias}
-                  </p>
-                </div>
+              <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+                <AuctionMetricCard
+                  icon={Gavel}
+                  label="Current highest"
+                  value={formatCurrency(auction.currentPrice)}
+                  helper={`Leader: ${auction.highestBidderAlias}`}
+                />
 
-                <div className="bg-muted/30 rounded-lg border p-4">
-                  <div className="text-muted-foreground mb-2 flex items-center gap-2 text-sm">
-                    <Tag className="size-4" />
-                    Next valid bid
-                  </div>
-                  <p className="text-2xl font-semibold">{formatCurrency(nextMinimumBid)}</p>
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    Increment minimum: {formatCurrency(auction.bidIncrement)}
-                  </p>
-                </div>
+                <AuctionMetricCard
+                  icon={Tag}
+                  label="Next valid bid"
+                  value={formatCurrency(nextMinimumBid)}
+                  helper={`Min increment: ${formatCurrency(auction.bidIncrement)}`}
+                />
 
-                <div className="bg-muted/30 rounded-lg border p-4">
-                  <div className="text-muted-foreground mb-2 flex items-center gap-2 text-sm">
-                    <Clock3 className="size-4" />
-                    Auction closes in
-                  </div>
-                  <p className="text-2xl font-semibold">
-                    <CountdownTimer endsAt={auction.endsAt} />
-                  </p>
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    Ends at {formatDateTime(auction.endsAt)}
-                  </p>
-                </div>
+                <AuctionMetricCard
+                  icon={Clock3}
+                  label="Closes in"
+                  value={<CountdownTimer endsAt={auction.endsAt} />}
+                  helper={`Ends at ${formatDateTime(auction.endsAt)}`}
+                />
 
-                <div className="bg-muted/30 rounded-lg border p-4">
-                  <div className="text-muted-foreground mb-2 flex items-center gap-2 text-sm">
-                    <Eye className="size-4" />
-                    Auction activity
-                  </div>
-                  <p className="text-2xl font-semibold">{auction.bidCount} bids</p>
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    {auction.extensionCount > 0
+                <AuctionMetricCard
+                  icon={Eye}
+                  label="Auction activity"
+                  value={`${auction.bidCount} bids`}
+                  helper={
+                    auction.extensionCount > 0
                       ? `Extended ${auction.extensionCount}x by anti-sniping`
-                      : "No anti-sniping extensions applied"}
-                  </p>
-                </div>
+                      : "No anti-sniping extensions applied"
+                  }
+                />
               </div>
 
               <div className="space-y-3">
@@ -573,7 +617,7 @@ export default function AuctionsDetailPage() {
           </Card>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 xl:sticky xl:top-20 xl:self-start">
           <Card>
             <CardHeader>
               <CardTitle>Place your bid</CardTitle>
@@ -587,21 +631,23 @@ export default function AuctionsDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-muted/30 rounded-lg border p-4 text-sm">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">Your latest bid</span>
-                  <span className="font-medium">
+                  <span className="max-w-[60%] text-right font-medium break-words">
                     {auction.myLatestBid ? formatCurrency(auction.myLatestBid) : "—"}
                   </span>
                 </div>
                 <Separator className="my-3" />
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">Current highest</span>
-                  <span className="font-medium">{formatCurrency(auction.currentPrice)}</span>
+                  <span className="max-w-[60%] text-right font-medium break-words">
+                    {formatCurrency(auction.currentPrice)}
+                  </span>
                 </div>
                 <Separator className="my-3" />
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">Reserve status</span>
-                  <span className="font-medium">
+                  <span className="max-w-[60%] text-right font-medium break-words">
                     {auction.reservePrice === null
                       ? "No reserve"
                       : reserveMet
@@ -646,9 +692,9 @@ export default function AuctionsDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-muted/30 rounded-lg border p-4 text-sm">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">Status</span>
-                  <span className="font-medium">
+                  <span className="max-w-[60%] text-right font-medium break-words">
                     {proxyQuery.isLoading
                       ? "Loading..."
                       : proxyQuery.data?.enabled
@@ -657,18 +703,20 @@ export default function AuctionsDetailPage() {
                   </span>
                 </div>
                 <Separator className="my-3" />
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">Current proxy max</span>
-                  <span className="font-medium">
+                  <span className="max-w-[60%] text-right font-medium break-words">
                     {proxyQuery.data?.enabled && proxyQuery.data.maxAmount
                       ? formatCurrency(proxyQuery.data.maxAmount)
                       : "—"}
                   </span>
                 </div>
                 <Separator className="my-3" />
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">Minimum proxy max</span>
-                  <span className="font-medium">{formatCurrency(minimumProxyAmount)}</span>
+                  <span className="max-w-[60%] text-right font-medium break-words">
+                    {formatCurrency(minimumProxyAmount)}
+                  </span>
                 </div>
               </div>
 
@@ -737,28 +785,32 @@ export default function AuctionsDetailPage() {
               <CardDescription>Important timestamps and closing behavior.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-start justify-between gap-3">
                 <span className="text-muted-foreground flex items-center gap-2">
                   <CalendarClock className="size-4" />
                   Started at
                 </span>
-                <span className="text-right font-medium">{formatDateTime(auction.startsAt)}</span>
+                <span className="max-w-[62%] break-words text-right font-medium">
+                  {formatDateTime(auction.startsAt)}
+                </span>
               </div>
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-start justify-between gap-3">
                 <span className="text-muted-foreground flex items-center gap-2">
                   <Clock3 className="size-4" />
                   Original end time
                 </span>
-                <span className="text-right font-medium">
+                <span className="max-w-[62%] break-words text-right font-medium">
                   {formatDateTime(auction.originalEndsAt)}
                 </span>
               </div>
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-start justify-between gap-3">
                 <span className="text-muted-foreground flex items-center gap-2">
                   <TimerReset className="size-4" />
                   Current end time
                 </span>
-                <span className="text-right font-medium">{formatDateTime(auction.endsAt)}</span>
+                <span className="max-w-[62%] break-words text-right font-medium">
+                  {formatDateTime(auction.endsAt)}
+                </span>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-muted-foreground flex items-center gap-2">
@@ -778,6 +830,7 @@ export default function AuctionsDetailPage() {
           </Card>
         </div>
       </div>
-    </div>
+      </div>
+    </section>
   );
 }

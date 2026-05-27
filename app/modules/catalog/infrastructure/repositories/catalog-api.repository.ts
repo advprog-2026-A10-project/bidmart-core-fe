@@ -3,11 +3,15 @@ import type {
   BrowseCategoryPathDTO,
   CreateSellerListingDTO,
   GetListingDetailDTO,
+  ListCategoriesDTO,
   PaginationDTO,
+  PresignedListingUploadDTO,
+  PresignListingUploadDTO,
   SellerListingActionDTO,
   UpdateSellerListingDTO,
 } from "~/modules/catalog/application/dtos/catalog.dto";
 import type {
+  CatalogCategory,
   CatalogListingDetail,
   PaginatedCatalogListings,
 } from "~/modules/catalog/domain/entities/catalog";
@@ -15,7 +19,12 @@ import type { ICatalogRepository } from "~/modules/catalog/domain/repositories/c
 import { apiClient } from "~/shared/infrastructure/http/api-client";
 import { createModuleLogger } from "~/shared/infrastructure/logger/module-logger";
 import { CatalogApiMapper } from "../api/catalog-api.mapper";
-import { catalogListingDetailApiSchema, paginatedCatalogListingApiSchema } from "../api/schemas";
+import {
+  catalogCategoryApiSchema,
+  catalogListingDetailApiSchema,
+  paginatedCatalogListingApiSchema,
+  presignedListingUploadApiSchema,
+} from "../api/schemas";
 
 const logger = createModuleLogger("catalog");
 
@@ -61,6 +70,19 @@ export class CatalogApiRepository implements ICatalogRepository {
       },
       { categoryPath: params.categoryPath },
     );
+  }
+
+  async listCategories(params: ListCategoriesDTO): Promise<CatalogCategory[]> {
+    return logger.trace("listCategories", async ({ requestId }) => {
+      const raw = await apiClient.get<unknown>("/categories", {
+        params: {
+          parent_id: params.parentId,
+        },
+        headers: { "X-Request-ID": requestId },
+      });
+      const validated = catalogCategoryApiSchema.array().parse(raw);
+      return validated.map((item) => CatalogApiMapper.toCategory(item));
+    });
   }
 
   async getPublicListing(params: GetListingDetailDTO): Promise<CatalogListingDetail> {
@@ -121,6 +143,26 @@ export class CatalogApiRepository implements ICatalogRepository {
       );
       const validated = catalogListingDetailApiSchema.parse(raw);
       return CatalogApiMapper.toListingDetail(validated);
+    });
+  }
+
+  async presignListingUpload(params: PresignListingUploadDTO): Promise<PresignedListingUploadDTO> {
+    return logger.trace("presignListingUpload", async ({ requestId }) => {
+      const raw = await apiClient.post<unknown>(
+        "/seller/listings/uploads/presign",
+        {
+          file_name: params.fileName,
+          content_type: params.contentType ?? null,
+        },
+        { headers: { "X-Request-ID": requestId } },
+      );
+      const validated = presignedListingUploadApiSchema.parse(raw);
+      return {
+        uploadUrl: validated.upload_url,
+        publicUrl: validated.public_url,
+        objectKey: validated.object_key,
+        expiresInSeconds: validated.expires_in_seconds,
+      };
     });
   }
 

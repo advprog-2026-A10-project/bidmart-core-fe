@@ -18,6 +18,7 @@ import {
 
 import { getOrderUseCases } from "~/modules/order/infrastructure";
 import { getWalletUseCases } from "~/modules/wallet/infrastructure/factories/wallet-repository.factory";
+import { WALLET_QUERY_KEYS } from "~/modules/wallet/presentation/query-keys";
 import { Avatar, AvatarFallback } from "~/shared/components/ui/avatar";
 import { Badge } from "~/shared/components/ui/badge";
 import { Button } from "~/shared/components/ui/button";
@@ -56,7 +57,7 @@ const mobileNav = [
   { label: "Seller Orders", to: "/seller/orders", icon: ShoppingBagIcon },
 ];
 
-const WALLET_BALANCE_QUERY_KEY = ["navbar", "wallet-balance"] as const;
+const WALLET_BALANCE_QUERY_KEY = [WALLET_QUERY_KEYS.balance] as const;
 const NOTIFICATION_COUNT_QUERY_KEY = ["navbar", "notification-count"] as const;
 const NOTIFICATION_BADGE_CAP = 9;
 

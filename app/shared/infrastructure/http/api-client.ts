@@ -3,15 +3,32 @@ import { NotFoundError } from "~/shared/domain/errors/not-found-error";
 import { ValidationError } from "~/shared/domain/errors/validation-error";
 import type { RequestOptions } from "./types";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() ?? "";
+
+function resolveBrowserOrigin(): string {
+  if (typeof window !== "undefined" && window.location.origin) {
+    return window.location.origin;
+  }
+  return "http://localhost";
+}
+
+function resolveApiBaseUrl(): string {
+  if (!rawBaseUrl) {
+    return resolveBrowserOrigin();
+  }
+
+  try {
+    return new URL(rawBaseUrl).toString();
+  } catch {
+    return new URL(rawBaseUrl, resolveBrowserOrigin()).toString();
+  }
+}
+
+const BASE_URL = resolveApiBaseUrl().replace(/\/$/, "");
 
 function buildUrl(path: string, params?: RequestOptions["params"]): string {
-  const base =
-    BASE_URL ||
-    (typeof window !== "undefined" && window.location.origin
-      ? window.location.origin
-      : "http://localhost");
-  const url = new URL(`${BASE_URL}${path}`, base);
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const url = new URL(`${BASE_URL}${normalizedPath}`);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined) {

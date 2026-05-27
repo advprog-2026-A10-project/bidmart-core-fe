@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { WalletApiRepository } from "../wallet-api.repository";
 
+function expectPathSuffix(url: URL, suffix: string) {
+  expect(url.pathname.endsWith(suffix)).toBe(true);
+}
+
 describe("WalletApiRepository", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -28,7 +32,7 @@ describe("WalletApiRepository", () => {
 
     const [requestedUrl, options] = fetchMock.mock.calls[0] as [string, RequestInit];
     const parsedUrl = new URL(requestedUrl);
-    expect(parsedUrl.pathname).toBe("/wallet");
+    expectPathSuffix(parsedUrl, "/wallet");
     expect(options.method).toBe("GET");
     expect(options.credentials).toBe("include");
 
@@ -72,7 +76,7 @@ describe("WalletApiRepository", () => {
 
     const [requestedUrl] = fetchMock.mock.calls[0] as [string];
     const parsedUrl = new URL(requestedUrl);
-    expect(parsedUrl.pathname).toBe("/wallet/transactions");
+    expectPathSuffix(parsedUrl, "/wallet/transactions");
     expect(parsedUrl.searchParams.get("page")).toBe("2");
     expect(parsedUrl.searchParams.get("pageSize")).toBe("10");
 

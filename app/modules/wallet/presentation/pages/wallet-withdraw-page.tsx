@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { ArrowRightLeft, Building2, CreditCard, UserRound } from "lucide-react";
 import { Link } from "react-router";
 
 import { getWalletUseCases } from "~/modules/wallet/infrastructure/factories/wallet-repository.factory";
@@ -42,11 +43,18 @@ export default function WalletWithdrawPage() {
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
       <div className="space-y-6">
-        <header className="space-y-1">
-          <h1 className="text-2xl font-bold">Withdraw Balance</h1>
-          <p className="text-muted-foreground text-sm">
-            Withdraw your available balance to a verified destination bank account.
-          </p>
+        <header className="border-primary/15 from-primary/10 via-background to-background rounded-2xl border bg-gradient-to-br p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold tracking-tight">Withdraw Balance</h1>
+              <p className="text-muted-foreground text-sm">
+                Submit a withdrawal request to transfer your available balance to your bank account.
+              </p>
+            </div>
+            <Button asChild size="sm" variant="outline">
+              <Link to="/wallet">Back to Wallet</Link>
+            </Button>
+          </div>
         </header>
 
         {withdrawMutation.isError ? (
@@ -114,21 +122,31 @@ export default function WalletWithdrawPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="bank">Bank</Label>
-                <Input id="bank" name="bank" placeholder="BCA" />
+                <div className="relative">
+                  <Building2 className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                  <Input className="pl-9" id="bank" name="bank" placeholder="BCA" />
+                </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="accountNo">Account Number</Label>
-                <Input id="accountNo" name="accountNo" placeholder="1234567890" />
+                <div className="relative">
+                  <CreditCard className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                  <Input className="pl-9" id="accountNo" name="accountNo" placeholder="1234567890" />
+                </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="name">Account Holder</Label>
-                <Input id="name" name="name" placeholder="Nama Pemilik Rekening" />
+                <div className="relative">
+                  <UserRound className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                  <Input className="pl-9" id="name" name="name" placeholder="Nama Pemilik Rekening" />
+                </div>
               </div>
 
               <div className="flex flex-wrap gap-2">
                 <Button disabled={withdrawMutation.isPending} type="submit">
+                  <ArrowRightLeft className="size-4" />
                   {withdrawMutation.isPending ? "Submitting..." : "Submit Withdraw"}
                 </Button>
                 <Button asChild type="button" variant="outline">

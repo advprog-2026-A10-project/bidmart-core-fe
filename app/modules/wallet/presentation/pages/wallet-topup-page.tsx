@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { CircleOff, FlaskConical, Landmark, QrCode, Smartphone } from "lucide-react";
 import { Link } from "react-router";
 
 import { getWalletUseCases } from "~/modules/wallet/infrastructure/factories/wallet-repository.factory";
@@ -17,6 +18,27 @@ function toCents(value: string): number | null {
   }
   return Math.round(parsed);
 }
+
+const DISABLED_PAYMENT_OPTIONS = [
+  {
+    id: "bank-transfer",
+    title: "Bank Transfer Virtual Account",
+    description: "Akan tersedia saat integrasi payment gateway selesai.",
+    icon: Landmark,
+  },
+  {
+    id: "ewallet",
+    title: "E-Wallet",
+    description: "Akan tersedia setelah provider e-wallet diaktifkan.",
+    icon: Smartphone,
+  },
+  {
+    id: "qris",
+    title: "QRIS",
+    description: "Akan tersedia saat endpoint callback payment siap.",
+    icon: QrCode,
+  },
+] as const;
 
 export default function WalletTopupPage() {
   const useCases = getWalletUseCases();
@@ -40,11 +62,19 @@ export default function WalletTopupPage() {
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
       <div className="space-y-6">
-        <header className="space-y-1">
-          <h1 className="text-2xl font-bold">Top Up Wallet</h1>
-          <p className="text-muted-foreground text-sm">
-            Add funds to your wallet balance using one of the available payment methods.
-          </p>
+        <header className="border-primary/15 from-primary/10 via-background to-background rounded-2xl border bg-gradient-to-br p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold tracking-tight">Top Up Wallet</h1>
+              <p className="text-muted-foreground text-sm">
+                Development mode: payment channels are shown as preview, while manual top up is
+                enabled for testing balance flow.
+              </p>
+            </div>
+            <Button asChild size="sm" variant="outline">
+              <Link to="/wallet">Back to Wallet</Link>
+            </Button>
+          </div>
         </header>
 
         {topupMutation.isError ? (
@@ -67,29 +97,63 @@ export default function WalletTopupPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Top Up Form</CardTitle>
+            <CardTitle>Top Up Methods</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3">
+              {DISABLED_PAYMENT_OPTIONS.map((option) => {
+                const Icon = option.icon;
+
+                return (
+                  <div
+                    className="bg-muted/20 flex items-start justify-between gap-3 rounded-lg border p-3 opacity-70"
+                    key={option.id}
+                  >
+                    <div className="space-y-1">
+                      <p className="inline-flex items-center gap-2 text-sm font-medium">
+                        <Icon className="size-4" />
+                        {option.title}
+                      </p>
+                      <p className="text-muted-foreground text-xs">{option.description}</p>
+                    </div>
+                    <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+                      <CircleOff className="size-3.5" />
+                      Disabled
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="rounded-lg border border-emerald-300/50 bg-emerald-50/70 p-3">
+              <p className="inline-flex items-center gap-2 text-sm font-medium text-emerald-800">
+                <FlaskConical className="size-4" />
+                Manual Balance Top Up (DEV)
+              </p>
+              <p className="mt-1 text-xs text-emerald-700">
+                Mode development: nominal yang diinput akan langsung menambah saldo wallet.
+              </p>
+            </div>
+
             <form
               className="space-y-4"
               onSubmit={(event) => {
                 event.preventDefault();
                 const formData = new FormData(event.currentTarget);
                 const amountCents = toCents(String(formData.get("amountCents") ?? ""));
-                const method = String(formData.get("method") ?? "").trim();
 
-                if (!amountCents || method.length === 0) {
+                if (!amountCents) {
                   return;
                 }
 
                 topupMutation.mutate({
                   amountCents,
-                  method,
+                  method: "DEV_MANUAL_MOCK",
                 });
               }}
             >
               <div className="space-y-2">
-                <Label htmlFor="amountCents">Amount (IDR, cents)</Label>
+                <Label htmlFor="amountCents">Manual Amount (IDR)</Label>
                 <Input
                   id="amountCents"
                   min={1}
@@ -97,11 +161,6 @@ export default function WalletTopupPage() {
                   placeholder="50000"
                   type="number"
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="method">Method</Label>
-                <Input id="method" name="method" placeholder="BANK_TRANSFER / EWALLET" />
               </div>
 
               <div className="flex flex-wrap gap-2">

@@ -17,6 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from "~/shared/components/ui/card";
+import { ScrollArea } from "~/shared/components/ui/scroll-area";
 import { Skeleton } from "~/shared/components/ui/skeleton";
 import {
   Table,
@@ -59,7 +60,7 @@ const toneByChannel: Record<
 };
 
 function formatTimestamp(iso: string) {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("id-ID", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(iso));
@@ -68,9 +69,12 @@ function formatTimestamp(iso: string) {
 function LoadingState() {
   return (
     <div className="container mx-auto space-y-6 px-4 py-8">
-      <Skeleton className="h-9 w-48" />
+      <Skeleton className="h-8 w-52" />
       <Skeleton className="h-36 w-full" />
-      <Skeleton className="h-80 w-full" />
+      <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+        <Skeleton className="h-80 w-full" />
+        <Skeleton className="h-80 w-full" />
+      </div>
     </div>
   );
 }
@@ -91,20 +95,17 @@ function DetailContent({
 
   return (
     <div className="container mx-auto space-y-6 px-4 py-8">
-      <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-2">
-          <p className="text-muted-foreground text-xs tracking-[0.3em] uppercase">
-            Notification Detail
-          </p>
+      <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-muted-foreground text-xs tracking-[0.4em] uppercase">Inbox detail</p>
           <h1 className="text-foreground text-3xl font-bold tracking-tight">
             {notification.title}
           </h1>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={toneByType[notification.type]}>{notification.type}</Badge>
-            <Badge variant={toneByChannel[notification.channel]}>{notification.channel}</Badge>
-            <Badge variant={isUnread ? "secondary" : "ghost"}>{isUnread ? "Unread" : "Read"}</Badge>
-          </div>
+          <p className="text-muted-foreground text-sm">
+            Detailed notification payload with contextual metadata.
+          </p>
         </div>
+
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline" size="sm">
             <Link to="/notifications">Back to notifications</Link>
@@ -114,83 +115,126 @@ function DetailContent({
           </Button>
         </div>
       </header>
+
       {markReadErrorMessage ? (
         <p className="border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm">
           {markReadErrorMessage}
         </p>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Message body</CardTitle>
-          <CardDescription>Primary payload from `/notifications/:notificationId`.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-foreground text-sm leading-6">{notification.body}</p>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <p className="text-muted-foreground text-xs">Created at</p>
-              <p className="text-sm font-medium">{formatTimestamp(notification.createdAt)}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-xs">Read at</p>
-              <p className="text-sm font-medium">
-                {notification.readAt ? formatTimestamp(notification.readAt) : "Not read yet"}
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-xs">Notification id</p>
-              <p className="text-sm font-medium">{notification.id}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-xs">Related order</p>
-              {notification.orderId ? (
-                <Button asChild className="px-0 text-sm" variant="link">
-                  <Link to={`/orders/${notification.orderId}`}>{notification.orderId}</Link>
-                </Button>
-              ) : (
-                <p className="text-sm font-medium">No order attached</p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Type</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Badge variant={toneByType[notification.type]}>{notification.type}</Badge>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Channel</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Badge variant={toneByChannel[notification.channel]}>{notification.channel}</Badge>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Badge variant={isUnread ? "secondary" : "ghost"}>{isUnread ? "Unread" : "Read"}</Badge>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Created at</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm font-medium">{formatTimestamp(notification.createdAt)}</p>
+          </CardContent>
+        </Card>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Metadata</CardTitle>
-          <CardDescription>Optional event context passed by the publisher.</CardDescription>
-        </CardHeader>
-        <CardContent className="px-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Key</TableHead>
-                <TableHead>Value</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {metadataRows.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={2} className="text-muted-foreground text-sm">
-                    No metadata for this notification.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                metadataRows.map(([key, value]) => (
-                  <TableRow key={key}>
-                    <TableCell>{key}</TableCell>
-                    <TableCell className="font-mono text-xs">{JSON.stringify(value)}</TableCell>
+      <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+        <Card className="flex flex-col">
+          <CardHeader>
+            <CardTitle>Message</CardTitle>
+            <CardDescription>
+              Primary payload from `/notifications/:notificationId`.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="border-border/70 bg-muted/30 rounded-2xl border p-4">
+              <p className="text-foreground text-sm leading-6">{notification.body}</p>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <div>
+                <p className="text-muted-foreground text-xs">Notification ID</p>
+                <p className="text-sm font-medium break-all">{notification.id}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-xs">Read at</p>
+                <p className="text-sm font-medium">
+                  {notification.readAt ? formatTimestamp(notification.readAt) : "Not read yet"}
+                </p>
+              </div>
+              <div className="md:col-span-2">
+                <p className="text-muted-foreground text-xs">Related order</p>
+                {notification.orderId ? (
+                  <Button asChild className="px-0 text-sm" variant="link">
+                    <Link to={`/orders/${notification.orderId}`}>{notification.orderId}</Link>
+                  </Button>
+                ) : (
+                  <p className="text-sm font-medium">No order attached</p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="flex flex-col">
+          <CardHeader>
+            <CardTitle>Metadata</CardTitle>
+            <CardDescription>Event context supplied by publisher.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="border-border h-[260px] rounded-2xl border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Key</TableHead>
+                    <TableHead>Value</TableHead>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-        <CardFooter className="text-muted-foreground text-xs">
-          Mark-as-read action calls `PATCH /notifications/:notificationId/read`.
-        </CardFooter>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {metadataRows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={2} className="text-muted-foreground text-sm">
+                        No metadata for this notification.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    metadataRows.map(([key, value]) => (
+                      <TableRow key={key}>
+                        <TableCell className="align-top text-xs font-semibold">{key}</TableCell>
+                        <TableCell className="font-mono text-[11px] break-all">
+                          {JSON.stringify(value)}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </CardContent>
+          <CardFooter className="text-muted-foreground text-xs">
+            Action endpoint: `PATCH /notifications/:notificationId/read`.
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
 }

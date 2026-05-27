@@ -15,6 +15,10 @@ export type BrowseCategoryPathDTO = PaginationDTO & {
   categoryPath: string;
 };
 
+export type ListCategoriesDTO = {
+  parentId?: number;
+};
+
 export type GetListingDetailDTO = {
   listingId: string;
 };
@@ -39,4 +43,16 @@ export type UpdateSellerListingDTO = {
 
 export type SellerListingActionDTO = {
   listingId: string;
+};
+
+export type PresignListingUploadDTO = {
+  fileName: string;
+  contentType?: string;
+};
+
+export type PresignedListingUploadDTO = {
+  uploadUrl: string;
+  publicUrl: string;
+  objectKey: string;
+  expiresInSeconds: number;
 };

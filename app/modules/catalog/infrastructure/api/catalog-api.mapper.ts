@@ -1,10 +1,12 @@
 import type {
+  CatalogCategory,
   CatalogListing,
   CatalogListingDetail,
   CatalogListingImage,
   PaginatedCatalogListings,
 } from "~/modules/catalog/domain/entities/catalog";
 import type {
+  CatalogCategoryApi,
   CatalogListingApi,
   CatalogListingDetailApi,
   CatalogListingImageApi,
@@ -32,6 +34,7 @@ export class CatalogApiMapper {
       endsAt: raw.ends_at,
       createdAt: raw.created_at,
       updatedAt: raw.updated_at,
+      thumbnailUrl: raw.thumbnail_url ?? null,
     };
   }
 
@@ -40,6 +43,17 @@ export class CatalogApiMapper {
       id: raw.id,
       url: raw.url,
       order: raw.order,
+    };
+  }
+
+  static toCategory(raw: CatalogCategoryApi): CatalogCategory {
+    return {
+      id: raw.id,
+      parentId: raw.parent_id,
+      name: raw.name,
+      slug: raw.slug,
+      imageUrl: raw.image_url,
+      childCount: raw.child_count,
     };
   }
 
