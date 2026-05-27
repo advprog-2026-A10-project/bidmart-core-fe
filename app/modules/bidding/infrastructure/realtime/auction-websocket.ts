@@ -16,10 +16,12 @@ type AuctionRealtimeSocketOptions = {
   onEvent: (event: AuctionRealtimeEvent) => void;
 };
 
-function toWebSocketBaseUrl(): string {
-  const configured = (import.meta.env.VITE_BIDDING_WS_URL as string | undefined)?.trim();
+const DEFAULT_SOCKET_BASE_URLS = ["ws://localhost:8083", "ws://localhost:8080"] as const;
+
+function toWebSocketBaseUrl(value: string): string {
+  const configured = value.trim();
   if (!configured) {
-    return "ws://localhost:8080";
+    return "";
   }
 
   if (configured.startsWith("ws://") || configured.startsWith("wss://")) {
@@ -37,8 +39,23 @@ function toWebSocketBaseUrl(): string {
   return configured;
 }
 
-function buildAuctionSocketUrl(auctionId: string): string {
-  const url = new URL(toWebSocketBaseUrl());
+function uniqueValues(values: string[]): string[] {
+  return [...new Set(values)];
+}
+
+function resolveSocketBaseUrls(): string[] {
+  const configured = (import.meta.env.VITE_BIDDING_WS_URL as string | undefined)?.trim();
+  const normalizedConfigured = configured ? toWebSocketBaseUrl(configured) : "";
+
+  if (!normalizedConfigured) {
+    return [...DEFAULT_SOCKET_BASE_URLS];
+  }
+
+  return uniqueValues([normalizedConfigured, ...DEFAULT_SOCKET_BASE_URLS]);
+}
+
+function buildAuctionSocketUrl(baseUrl: string, auctionId: string): string {
+  const url = new URL(baseUrl);
   if (!url.searchParams.get("auctionId")) {
     url.searchParams.set("auctionId", auctionId);
   }
@@ -192,11 +209,14 @@ function sendAuctionSubscription(socket: WebSocket, auctionId: string) {
 
 export function startAuctionRealtimeSocket(options: AuctionRealtimeSocketOptions): () => void {
   const { auctionId, onEvent } = options;
-  const socketUrl = buildAuctionSocketUrl(auctionId);
+  const socketUrls = resolveSocketBaseUrls().map((baseUrl) =>
+    buildAuctionSocketUrl(baseUrl, auctionId),
+  );
 
   let socket: WebSocket | null = null;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   let retryAttempt = 0;
+  let urlIndex = 0;
   let shouldReconnect = true;
 
   const clearReconnectTimer = () => {
@@ -224,6 +244,7 @@ export function startAuctionRealtimeSocket(options: AuctionRealtimeSocketOptions
     const exponentialDelay = Math.min(15_000, 1_000 * 2 ** retryAttempt);
     const jitter = Math.floor(Math.random() * 250);
     retryAttempt += 1;
+    urlIndex = (urlIndex + 1) % socketUrls.length;
 
     reconnectTimer = setTimeout(() => {
       connect();
@@ -236,7 +257,7 @@ export function startAuctionRealtimeSocket(options: AuctionRealtimeSocketOptions
     }
 
     closeSocket();
-    const nextSocket = new WebSocket(socketUrl);
+    const nextSocket = new WebSocket(socketUrls[urlIndex]);
     socket = nextSocket;
 
     nextSocket.onopen = () => {

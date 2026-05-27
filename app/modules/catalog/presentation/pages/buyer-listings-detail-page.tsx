@@ -58,6 +58,26 @@ function formatRemainingTime(value: string): string {
   return `${totalDays} days left`;
 }
 
+function isAuctionLive(params: {
+  auctionId: string | null;
+  status: string;
+  startsAt: string;
+  endsAt: string;
+}): boolean {
+  if (!params.auctionId || params.status !== "Active") {
+    return false;
+  }
+
+  const startsAtMs = Date.parse(params.startsAt);
+  const endsAtMs = Date.parse(params.endsAt);
+  if (Number.isNaN(startsAtMs) || Number.isNaN(endsAtMs)) {
+    return false;
+  }
+
+  const nowMs = Date.now();
+  return nowMs >= startsAtMs && nowMs < endsAtMs;
+}
+
 export default function BuyerListingsDetailPage() {
   const params = useParams();
   const useCases = getCatalogUseCases();
@@ -78,6 +98,15 @@ export default function BuyerListingsDetailPage() {
     const clampedIndex = activeImageIndex >= images.length ? 0 : activeImageIndex;
     return images[clampedIndex] ?? null;
   }, [activeImageIndex, listingQuery.data?.images]);
+
+  const canGoToLiveAuction = listingQuery.data
+    ? isAuctionLive({
+        auctionId: listingQuery.data.listing.auctionId,
+        status: listingQuery.data.listing.status,
+        startsAt: listingQuery.data.listing.startsAt,
+        endsAt: listingQuery.data.listing.endsAt,
+      })
+    : false;
 
   if (!listingId) {
     return (
@@ -254,9 +283,17 @@ export default function BuyerListingsDetailPage() {
                   </div>
 
                   {listingQuery.data.listing.auctionId ? (
-                    <Button asChild className="w-full" size="sm">
-                      <Link to={`/auctions/${listingQuery.data.listing.auctionId}`}>Go to live auction</Link>
-                    </Button>
+                    canGoToLiveAuction ? (
+                      <Button asChild className="w-full" size="sm">
+                        <Link to={`/auctions/${listingQuery.data.listing.auctionId}`}>
+                          Go to live auction
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button className="w-full" disabled size="sm">
+                        Go to live auction
+                      </Button>
+                    )
                   ) : null}
                 </CardContent>
               </Card>

@@ -169,4 +169,80 @@ describe("Catalog buyer pages", () => {
     expect(await screen.findByText("Mirrorless Camera")).toBeInTheDocument();
     expect(screen.getByText("No images provided for this listing.")).toBeInTheDocument();
   });
+
+  it("disables go to live auction button when auction has not started", async () => {
+    const now = Date.now();
+
+    mocked.getPublicListingExecute.mockResolvedValue({
+      listing: {
+        id: "listing-1",
+        sellerId: "seller-1",
+        sellerName: "Seller One",
+        categoryId: 12,
+        categoryName: "Electronics",
+        title: "Mirrorless Camera",
+        description: "Body only",
+        startPrice: 5000000,
+        reservePrice: null,
+        currentPrice: 5500000,
+        minIncrement: 100000,
+        bidCount: 3,
+        status: "Active",
+        auctionId: "55555555-5555-4555-8555-555555555555",
+        startsAt: new Date(now + 60_000).toISOString(),
+        endsAt: new Date(now + 120_000).toISOString(),
+        createdAt: "2026-05-18T00:00:00Z",
+        updatedAt: "2026-05-18T00:30:00Z",
+      },
+      images: [],
+    });
+
+    render(
+      createWrapper("/listings/listing-1", "/listings/:listingId", <BuyerListingsDetailPage />),
+    );
+
+    const auctionButton = await screen.findByRole("button", {
+      name: /go to live auction/i,
+    });
+
+    expect(auctionButton).toBeDisabled();
+  });
+
+  it("disables go to live auction button when auction is closed", async () => {
+    const now = Date.now();
+
+    mocked.getPublicListingExecute.mockResolvedValue({
+      listing: {
+        id: "listing-1",
+        sellerId: "seller-1",
+        sellerName: "Seller One",
+        categoryId: 12,
+        categoryName: "Electronics",
+        title: "Mirrorless Camera",
+        description: "Body only",
+        startPrice: 5000000,
+        reservePrice: null,
+        currentPrice: 5500000,
+        minIncrement: 100000,
+        bidCount: 3,
+        status: "Active",
+        auctionId: "55555555-5555-4555-8555-555555555555",
+        startsAt: new Date(now - 120_000).toISOString(),
+        endsAt: new Date(now - 60_000).toISOString(),
+        createdAt: "2026-05-18T00:00:00Z",
+        updatedAt: "2026-05-18T00:30:00Z",
+      },
+      images: [],
+    });
+
+    render(
+      createWrapper("/listings/listing-1", "/listings/:listingId", <BuyerListingsDetailPage />),
+    );
+
+    const auctionButton = await screen.findByRole("button", {
+      name: /go to live auction/i,
+    });
+
+    expect(auctionButton).toBeDisabled();
+  });
 });

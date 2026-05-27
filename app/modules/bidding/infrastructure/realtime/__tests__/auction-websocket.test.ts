@@ -70,7 +70,7 @@ describe("startAuctionRealtimeSocket", () => {
 
     expect(MockWebSocket.instances).toHaveLength(1);
     const socket = MockWebSocket.instances[0];
-    expect(socket.url).toContain("ws://localhost:8080");
+    expect(socket.url).toMatch(/^wss?:\/\//);
     expect(socket.url).toContain("auctionId=auction-1");
     expect(socket.url).toContain("topic=auction");
 
